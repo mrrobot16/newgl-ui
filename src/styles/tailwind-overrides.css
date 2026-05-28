@@ -16,9 +16,13 @@
   --color-input-border-primary: #8D9096;
   --font-size-input-text: 16px;
   --font-size-component-medium: 16px;
+  --color-text-disabled: #8D9096;
+  --color-text-highlight: #A0CFFF;
   --color-action-passive-subtle-active: rgba(107, 108, 114, 0.2);
   --color-action-passive-subtle-focus: rgba(107, 108, 114, 0);
   --color-action-passive-subtle-hover: rgba(107, 108, 114, 0.1);
+  --color-container-background-primary: #FFFFFF;
+  --color-container-background-secondary: #ECEEF1;
 }
 
 /*
@@ -62,6 +66,8 @@
 .tw-override.main {
   background-color: #ECEEF1;
   color: var(--color-text-global);
+  height: 100vh;
+  background-color: var(--color-container-background-primary);
 }
 
 .tw-override .header {
@@ -71,6 +77,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
+  background-color: var(--color-container-background-secondary);
 }
 .tw-override .page-title {
   font-size: 1.5rem; 
@@ -119,4 +126,8 @@
 
 .tw-override .selector-option-selected .selector-option-label {
   font-weight: 700;
+}
+.tw-override .page-content {
+  margin: 0 30px 30px 30px;
+  padding: 15px;
 }

@@ -117,6 +117,8 @@ For `Charitable donations (Equity)` the dropdown list must include:
 
 Responsibilities:
 
+- pagination view uses link-based labels (`Go to`, `First`, `Previous`, `Next`, `Last`)
+- apply disabled/hover link states using CSS tokens (`--color-text-disabled`, `--color-text-highlight`)
 - render ledger-oriented rows
 - render two-level column headers (`Ref No/Type` and `Payee/Account`)
 - render header labels top-aligned
@@ -141,6 +143,14 @@ Responsibilities:
 - render filter toolbar above the table (`All`, print/export/settings)
 - support small-screen horizontal scrolling without clipping payee/account dropdown overlays
 - use QuickBooks-like table spacing, header treatments, and numeric alignment
+
+### BankRegisterLayout
+
+Responsibilities:
+
+- render `TablePagination` outside `RegisterTable`
+- place one pagination block above and one below the table container
+- keep pagination aligned to the right
 
 ## 5. Payee Modal Layer
 

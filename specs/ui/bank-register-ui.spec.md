@@ -37,6 +37,12 @@ The screen is divided into 4 main sections:
   - right-side `Reconcile` green action button
   - ending balance label (`uppercase`, `tracking-wide`) with prominent amount
 - pagination/navigation strip includes `Go to` input, first/prev/next/last actions, and range summary
+- table pagination appears above and below the register table, right-aligned, with format:
+  - `Go to:<page> of <pages> < First Previous <start>-<end> of <total> Next Last >`
+- pagination blocks are rendered outside the table component (in page layout), one above and one below
+- the page number after `Go to:` and navigation labels are rendered as links (placeholder behavior for now)
+- when there are no pages, pagination links use disabled color token `--color-text-disabled`
+- when enabled and hovered, pagination links use highlight token `--color-text-highlight`
 - action toolbar uses blue text split control (`Add <Type>`) with chevron dropdown
 - table container includes filter bar above header:
   - left filter indicator (`All`)

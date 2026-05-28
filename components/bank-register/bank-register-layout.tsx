@@ -3,6 +3,7 @@
 import { AccountSelector } from "@/components/bank-register/account-selector";
 import { ActionToolbar } from "@/components/bank-register/action-toolbar";
 import { RegisterTable } from "@/components/bank-register/register-table";
+import { TablePagination } from "@/components/bank-register/table-pagination";
 import { useBankRegister } from "@/modules/accounting/presentation/hooks/use-bank-register";
 
 export function BankRegisterLayout() {
@@ -96,7 +97,8 @@ export function BankRegisterLayout() {
         {error ? <div className="rounded-md bg-red-50 p-3 text-sm text-red-700">{error}</div> : null}
       </div> */}
 
-      <section className="mt-4">
+      <section className="page-content ">
+        <TablePagination totalItems={entries.length} />
         <RegisterTable
           entries={entries}
           draftTransaction={draftTransaction}
@@ -108,6 +110,7 @@ export function BankRegisterLayout() {
           onUpdateEntry={updateRegisterEntryInline}
           onDeleteEntry={deleteRegisterEntryInline}
         />
+        <TablePagination totalItems={entries.length} />
       </section>
     </main>
   );
