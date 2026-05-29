@@ -82,7 +82,7 @@ export function BankRegisterLayout() {
         </div> */}
       </header>
 
-      {/* <div className="space-y-2">
+      <div className="space-y-2">
         <ActionToolbar
           availableTransactionTypes={availableTransactionTypes}
           selectedTransactionType={selectedTransactionType}
@@ -95,7 +95,7 @@ export function BankRegisterLayout() {
           </p>
         ) : null}
         {error ? <div className="rounded-md bg-red-50 p-3 text-sm text-red-700">{error}</div> : null}
-      </div> */}
+      </div>
 
       <section className="page-content ">
         <TablePagination totalItems={entries.length} />
