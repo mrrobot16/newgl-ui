@@ -2,11 +2,12 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { AddTransactionForm } from "@/components/bank-register/add-transaction-form";
 import { ActionToolbar } from "@/components/bank-register/action-toolbar";
 import { EditTransactionForm } from "@/components/bank-register/edit-transaction-form";
+import { FilterFormPopover } from "@/components/bank-register/filter-form-popover";
 import { PayeeSideModal } from "@/components/bank-register/payee-side-modal";
 import type { PayeeOption } from "@/components/bank-register/payee-side-modal";
-import { SelectField } from "@/components/bank-register/select-field";
+import { RegisterTableColumnGroup } from "@/components/bank-register/register-table-column-group";
+import { RegisterTableHeader } from "@/components/bank-register/register-table-header";
 import type { SelectFieldOption } from "@/components/bank-register/select-field";
-import { InputField } from "@/components/ui/input-field";
 import { Funnel, Printer, Settings2, Upload } from "lucide-react";
 import type { RegisterEntry } from "@/modules/accounting/domain/models";
 import {
@@ -573,23 +574,10 @@ export function RegisterTable({
     }
   }
 
-  const renderColumnGroup = () => (
-    <colgroup>
-      <col className="w-[125px]" />
-      <col className="w-[100px]" />
-      <col className="w-[250px]" />
-      <col className="w-[150px]" />
-      <col className="w-[120px]" />
-      <col className="w-[120px]" />
-      <col className="w-[60px]" />
-      <col className="w-[120px]" />
-    </colgroup>
-  );
-
   const renderReadOnlyEntryTable = (entry: RegisterEntry) => (
     <div key={entry.id}>
       <table className="group w-full min-w-[1025px] table-fixed border-collapse text-sm">
-        {renderColumnGroup()}
+        <RegisterTableColumnGroup />
         <tbody>
           <tr className={`cursor-pointer group-hover:bg-[#f3f8fe] ${rowStyle(entry.status)}`} onClick={() => openRowEditor(entry)}>
             <td className="p-2 text-[13px] align-top text-gray-800">
@@ -693,128 +681,51 @@ export function RegisterTable({
             <span>All</span>
           )}
           {isFilterPopoverOpen ? (
-            <div
-              ref={filterPopoverRef}
-              className="form-popover absolute left-0 top-full z-50 mt-1 w-[530px] overflow-visible rounded-md border border-gray-200 bg-white p-0 pt-[5px] shadow-lg"
-            >
-              <div className="space-y-3 px-4 pb-4">
-                <div>
-                  <label className="mb-1 block text-xs font-semibold text-gray-700">Find</label>
-                  <InputField
-                    type="text"
-                    value={filterDraft.find}
-                    onChange={(event) => setFilterDraft((current) => ({ ...current, find: event.target.value }))}
-                    placeholder="Memo, Ref no, $amt, > $amt, < $amt"
-                    className="w-full"
-                  />
-                </div>
-
-                <div className="grid grid-cols-3 gap-3">
-                  <div>
-                    <label className="mb-1 block text-xs font-semibold text-gray-700">Reconcile status</label>
-                    <SelectField
-                      value={filterDraft.reconcileStatus}
-                      onChange={(value) =>
-                        setFilterDraft((current) => ({ ...current, reconcileStatus: value as ReconcileFilterValue }))
-                      }
-                      options={RECONCILE_FILTER_OPTIONS}
-                      placeholder="Select status"
-                      allowCustomValue={false}
-                      optionSize="sm"
-                    />
-                  </div>
-                  <div>
-                    <label className="mb-1 block text-xs font-semibold text-gray-700">Transaction type</label>
-                    <SelectField
-                      value={filterDraft.transactionType}
-                      onChange={(value) => setFilterDraft((current) => ({ ...current, transactionType: value }))}
-                      options={allTransactionTypeOptions}
-                      placeholder="All"
-                      allowCustomValue={false}
-                      optionSize="sm"
-                    />
-                  </div>
-                  <div>
-                    <label className="mb-1 block text-xs font-semibold text-gray-700">Payee</label>
-                    <SelectField
-                      value={filterDraft.payee}
-                      onChange={(value) => setFilterDraft((current) => ({ ...current, payee: value }))}
-                      options={payeeFilterOptions}
-                      placeholder="All"
-                      allowCustomValue={false}
-                      optionSize="sm"
-                    />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-3 gap-3">
-                  <div>
-                    <label className="mb-1 block text-xs font-semibold text-gray-700">Date</label>
-                    <SelectField
-                      value={filterDraft.datePreset}
-                      onChange={handleDatePresetChange}
-                      options={DATE_FILTER_OPTIONS}
-                      placeholder="All dates"
-                      allowCustomValue={false}
-                      optionSize="sm"
-                    />
-                  </div>
-                  <div>
-                    <label className="mb-1 block text-xs font-semibold text-gray-700">From</label>
-                    <InputField
-                      type={isFromDateActive || Boolean(filterDraft.from) ? "date" : "text"}
-                      value={filterDraft.from || ""}
-                      placeholder=""
-                      onFocus={() => setIsFromDateActive(true)}
-                      onBlur={() => {
-                        if (!filterDraft.from) {
-                          setIsFromDateActive(false);
-                        }
-                      }}
-                      onChange={(event) =>
-                        setFilterDraft((current) => ({
-                          ...current,
-                          datePreset: "CUSTOM",
-                          from: event.target.value
-                        }))
-                      }
-                      className="w-full"
-                    />
-                  </div>
-                  <div>
-                    <label className="mb-1 block text-xs font-semibold text-gray-700">To</label>
-                    <InputField
-                      type={isToDateActive || Boolean(filterDraft.to) ? "date" : "text"}
-                      value={filterDraft.to || ""}
-                      placeholder=""
-                      onFocus={() => setIsToDateActive(true)}
-                      onBlur={() => {
-                        if (!filterDraft.to) {
-                          setIsToDateActive(false);
-                        }
-                      }}
-                      onChange={(event) =>
-                        setFilterDraft((current) => ({
-                          ...current,
-                          datePreset: "CUSTOM",
-                          to: event.target.value
-                        }))
-                      }
-                      className="w-full"
-                    />
-                  </div>
-                </div>
-
-                <div className="flex justify-end gap-2 pt-1">
-                  <button type="button" className="button secondary" onClick={handleResetFilters}>
-                    Reset
-                  </button>
-                  <button type="button" className="button primary" onClick={handleApplyFilters}>
-                    Apply
-                  </button>
-                </div>
-              </div>
-            </div>
+            <FilterFormPopover
+              popoverRef={filterPopoverRef}
+              filterDraft={filterDraft}
+              isFromDateActive={isFromDateActive}
+              isToDateActive={isToDateActive}
+              reconcileOptions={RECONCILE_FILTER_OPTIONS}
+              transactionTypeOptions={allTransactionTypeOptions}
+              payeeOptions={payeeFilterOptions}
+              dateOptions={DATE_FILTER_OPTIONS}
+              onFindChange={(value) => setFilterDraft((current) => ({ ...current, find: value }))}
+              onReconcileStatusChange={(value) =>
+                setFilterDraft((current) => ({ ...current, reconcileStatus: value as ReconcileFilterValue }))
+              }
+              onTransactionTypeChange={(value) => setFilterDraft((current) => ({ ...current, transactionType: value }))}
+              onPayeeChange={(value) => setFilterDraft((current) => ({ ...current, payee: value }))}
+              onDatePresetChange={handleDatePresetChange}
+              onFromFocus={() => setIsFromDateActive(true)}
+              onFromBlur={() => {
+                if (!filterDraft.from) {
+                  setIsFromDateActive(false);
+                }
+              }}
+              onFromChange={(value) =>
+                setFilterDraft((current) => ({
+                  ...current,
+                  datePreset: "CUSTOM",
+                  from: value
+                }))
+              }
+              onToFocus={() => setIsToDateActive(true)}
+              onToBlur={() => {
+                if (!filterDraft.to) {
+                  setIsToDateActive(false);
+                }
+              }}
+              onToChange={(value) =>
+                setFilterDraft((current) => ({
+                  ...current,
+                  datePreset: "CUSTOM",
+                  to: value
+                }))
+              }
+              onReset={handleResetFilters}
+              onApply={handleApplyFilters}
+            />
           ) : null}
         </div>
         <div className="flex h-full items-center gap-4 text-[#BABEC5]">
@@ -842,65 +753,7 @@ export function RegisterTable({
         </div>
       </div>
 
-      <div className="header-table">
-        <table className="w-full min-w-[1025px] table-fixed border-collapse text-sm">
-          {renderColumnGroup()}
-          <thead className="text-left uppercase tracking-wide">
-            <tr>
-              <th className="px-2 pb-[5px] pt-2 text-left align-middle">
-                Date
-              </th>
-              <th className="border-l-custom px-2 pb-[5px] pt-2 text-left align-middle">
-                Ref No.
-              </th>
-              <th className="border-l-custom px-2 pb-[5px] pt-2 text-left align-middle">
-                Payee
-              </th>
-              <th className="border-l-custom px-2 pb-[5px] pt-2 text-left align-middle">
-                Memo
-              </th>
-              <th className="border-l-custom px-2 pb-[5px] pt-2 text-right align-middle">
-                Payment
-              </th>
-              <th className="border-l-custom px-2 pb-[5px] pt-2 text-right align-middle">
-                Deposit
-              </th>
-              <th className="border-l-custom px-2 pb-[5px] pt-2 text-center align-middle">
-                ✓
-              </th>
-              <th className="border-l-custom px-2 pb-[5px] pt-2 text-right align-middle">
-                Balance
-              </th>
-            </tr>
-            <tr>
-              <th className=" px-2 pb-[6px] pt-0 text-left tracking-normal">
-                &nbsp;
-              </th>
-              <th className="border-l-custom px-2 pb-[6px] pt-0 text-left tracking-normal">
-                Type
-              </th>
-              <th className="border-l-custom px-2 pb-[6px] pt-0 text-left tracking-normal">
-                Account
-              </th>
-              <th className="border-l-custom px-2 pb-[6px] pt-0 text-left tracking-normal">
-                &nbsp;
-              </th>
-              <th className="border-l-custom px-2 pb-[6px] pt-0 text-right tracking-normal">
-                &nbsp;
-              </th>
-              <th className="border-l-custom px-2 pb-[6px] pt-0 text-right tracking-normal">
-                &nbsp;
-              </th>
-              <th className="border-l-custom px-2 pb-[6px] pt-0 text-center tracking-normal">
-                &nbsp;
-              </th>
-              <th className="border-l-custom px-2 pb-[6px] pt-0 text-right tracking-normal">
-                &nbsp;
-              </th>
-            </tr>
-          </thead>
-        </table>
-      </div>
+      <RegisterTableHeader />
 
       <div className="content-table">
         <div className="actions-quickadd">
@@ -921,7 +774,6 @@ export function RegisterTable({
             isDraftInflowType={isDraftInflowType}
             isDraftOutflowType={isDraftOutflowType}
             isSavingDraft={isSavingDraft}
-            renderColumnGroup={renderColumnGroup}
             onDraftFieldChange={onDraftFieldChange}
             onDraftSave={onDraftSave}
             onDraftCancel={onDraftCancel}
@@ -939,7 +791,7 @@ export function RegisterTable({
             {selectedEntry ? (
               <div key={selectedEntry.id}>
                 <table className="w-full min-w-[1025px] table-fixed border-collapse text-sm">
-                  {renderColumnGroup()}
+                  <RegisterTableColumnGroup />
                   <tbody>
                     <tr>
                       <td colSpan={8} className="p-0">
@@ -953,7 +805,6 @@ export function RegisterTable({
                           isDeletingRow={isDeletingRow}
                           isPaymentDisabled={INFLOW_ROW_TYPES.has(selectedEntry.transactionType)}
                           isDepositDisabled={OUTFLOW_ROW_TYPES.has(selectedEntry.transactionType)}
-                          renderColumnGroup={renderColumnGroup}
                           onEditorChange={(field, value) => setEditor((current) => ({ ...current, [field]: value }))}
                           onReconcileCycle={cycleEditorReconcileStatus}
                           onAccountLabelChange={setAccountLabel}

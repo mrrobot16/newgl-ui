@@ -1,6 +1,6 @@
-import type { ReactNode } from "react";
 import { ACCOUNT_FIELD_OPTIONS } from "@/components/bank-register/account-field-options";
 import { ReconcileStatusCell } from "@/components/bank-register/reconcile-status";
+import { RegisterTableColumnGroup } from "@/components/bank-register/register-table-column-group";
 import { SelectField } from "@/components/bank-register/select-field";
 import type { SelectFieldOption } from "@/components/bank-register/select-field";
 import { Button } from "@/components/ui/button";
@@ -18,7 +18,6 @@ type AddTransactionFormProps = {
   isDraftInflowType: boolean;
   isDraftOutflowType: boolean;
   isSavingDraft: boolean;
-  renderColumnGroup: () => ReactNode;
   onDraftFieldChange: (
     field: keyof Omit<DraftTransactionForm, "transactionTypeId" | "transactionTypeLabel">,
     value: string
@@ -37,7 +36,6 @@ export function AddTransactionForm({
   isDraftInflowType,
   isDraftOutflowType,
   isSavingDraft,
-  renderColumnGroup,
   onDraftFieldChange,
   onDraftSave,
   onDraftCancel,
@@ -48,7 +46,7 @@ export function AddTransactionForm({
     <div className="form-transaction-row">
       <div className="form-transaction-row-top">
         <table className="w-full min-w-[1025px] table-fixed border-collapse text-sm">
-          {renderColumnGroup()}
+          <RegisterTableColumnGroup />
           <tbody>
             <tr className="align-top">
               <td className="form-control">
