@@ -3,7 +3,6 @@
 import { AccountSelector } from "@/components/bank-register/account-selector";
 import { RegisterTable } from "@/components/bank-register/register-table";
 import { getRegisterTitle } from "@/components/bank-register/register-title";
-import { TablePagination } from "@/components/bank-register/table-pagination";
 import { DEFAULT_TOP_HEADER_USER_NAME } from "@/components/layout/top-header";
 import { useBankRegister } from "@/modules/accounting/presentation/hooks/use-bank-register";
 
@@ -64,7 +63,6 @@ export function BankRegisterLayout() {
       {error ? <div className="rounded-md bg-red-50 p-3 text-sm text-red-700">{error}</div> : null}
 
       <section className="page-content ">
-        <TablePagination totalItems={entries.length} />
         <RegisterTable
           entries={entries}
           draftTransaction={draftTransaction}
@@ -85,7 +83,6 @@ export function BankRegisterLayout() {
           endingBalance={generalBalance}
           printUserName={DEFAULT_TOP_HEADER_USER_NAME}
         />
-        <TablePagination totalItems={entries.length} />
       </section>
     </main>
   );

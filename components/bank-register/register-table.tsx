@@ -10,7 +10,9 @@ import { PayeeSideModal } from "@/components/bank-register/payee-side-modal";
 import type { PayeeOption } from "@/components/bank-register/payee-side-modal";
 import { RegisterTableColumnGroup } from "@/components/bank-register/register-table-column-group";
 import { RegisterTableHeader } from "@/components/bank-register/register-table-header";
-import { Funnel, Printer, Settings2, Upload } from "lucide-react";
+import { SelectField } from "@/components/bank-register/select-field";
+import { TablePagination } from "@/components/bank-register/table-pagination";
+import { Funnel, Printer, Settings, Upload } from "lucide-react";
 import type { RegisterEntry } from "@/modules/accounting/domain/models";
 import {
   nextReconcileStatus
@@ -86,6 +88,8 @@ const OUTFLOW_ROW_TYPES = new Set<RegisterEntry["transactionType"]>([
   "EXPENSE"
 ]);
 
+const ROWS_PER_PAGE_OPTIONS = [4, 40, 60, 80, 100, 125, 150] as const;
+
 export function RegisterTable({
   entries,
   draftTransaction,
@@ -123,6 +127,9 @@ export function RegisterTable({
   const [payees, setPayees] = useState<PayeeOption[]>([]);
   const [isPayeeModalOpen, setIsPayeeModalOpen] = useState(false);
   const [payeeModalTarget, setPayeeModalTarget] = useState<"draft" | "row">("draft");
+  const [isSettingsPopoverOpen, setIsSettingsPopoverOpen] = useState(false);
+  const [rowsPerPage, setRowsPerPage] = useState<number>(40);
+  const [currentPage, setCurrentPage] = useState<number>(1);
 
   const payeeOptions = useMemo(
     () =>
@@ -168,20 +175,41 @@ export function RegisterTable({
     formatTransactionTypeLabel
   });
   const selectedEntry = useMemo(
-    () => filteredEntries.find((entry) => entry.id === selectedEntryId) ?? null,
-    [filteredEntries, selectedEntryId]
+    () => {
+      const startIndex = (currentPage - 1) * rowsPerPage;
+      const pageEntries = filteredEntries.slice(startIndex, startIndex + rowsPerPage);
+      return pageEntries.find((entry) => entry.id === selectedEntryId) ?? null;
+    },
+    [currentPage, filteredEntries, rowsPerPage, selectedEntryId]
+  );
+  const totalPages = useMemo(
+    () => (filteredEntries.length > 0 ? Math.ceil(filteredEntries.length / rowsPerPage) : 0),
+    [filteredEntries.length, rowsPerPage]
+  );
+  const paginatedEntries = useMemo(() => {
+    if (filteredEntries.length === 0) return [];
+    const startIndex = (currentPage - 1) * rowsPerPage;
+    return filteredEntries.slice(startIndex, startIndex + rowsPerPage);
+  }, [currentPage, filteredEntries, rowsPerPage]);
+  const paginationStart = useMemo(
+    () => (filteredEntries.length === 0 ? 0 : (currentPage - 1) * rowsPerPage + 1),
+    [currentPage, filteredEntries.length, rowsPerPage]
+  );
+  const paginationEnd = useMemo(
+    () => (filteredEntries.length === 0 ? 0 : Math.min(currentPage * rowsPerPage, filteredEntries.length)),
+    [currentPage, filteredEntries.length, rowsPerPage]
   );
   const selectedEntryIndex = useMemo(
-    () => (selectedEntryId ? filteredEntries.findIndex((entry) => entry.id === selectedEntryId) : -1),
-    [filteredEntries, selectedEntryId]
+    () => (selectedEntryId ? paginatedEntries.findIndex((entry) => entry.id === selectedEntryId) : -1),
+    [paginatedEntries, selectedEntryId]
   );
   const entriesBeforeSelected = useMemo(
-    () => (selectedEntryIndex >= 0 ? filteredEntries.slice(0, selectedEntryIndex) : filteredEntries),
-    [filteredEntries, selectedEntryIndex]
+    () => (selectedEntryIndex >= 0 ? paginatedEntries.slice(0, selectedEntryIndex) : paginatedEntries),
+    [paginatedEntries, selectedEntryIndex]
   );
   const entriesAfterSelected = useMemo(
-    () => (selectedEntryIndex >= 0 ? filteredEntries.slice(selectedEntryIndex + 1) : []),
-    [filteredEntries, selectedEntryIndex]
+    () => (selectedEntryIndex >= 0 ? paginatedEntries.slice(selectedEntryIndex + 1) : []),
+    [paginatedEntries, selectedEntryIndex]
   );
   const isDraftInflowType = draftTransaction
     ? isInflowTransactionType(draftTransaction.transactionTypeId)
@@ -226,12 +254,35 @@ export function RegisterTable({
 
   useEffect(() => {
     if (!selectedEntryId) return;
-    const stillVisible = filteredEntries.some((entry) => entry.id === selectedEntryId);
+    const stillVisible = paginatedEntries.some((entry) => entry.id === selectedEntryId);
     if (!stillVisible) {
       setSelectedEntryId(null);
       setRowError(null);
     }
-  }, [filteredEntries, selectedEntryId]);
+  }, [paginatedEntries, selectedEntryId]);
+
+  useEffect(() => {
+    if (totalPages === 0) {
+      if (currentPage !== 1) setCurrentPage(1);
+      return;
+    }
+    if (currentPage > totalPages) {
+      setCurrentPage(totalPages);
+    }
+  }, [currentPage, totalPages]);
+
+  useEffect(() => {
+    function handleOutsideClick(event: MouseEvent) {
+      const target = event.target;
+      if (!(target instanceof Element)) return;
+      if (!target.closest("[data-settings-popover-root]")) {
+        setIsSettingsPopoverOpen(false);
+      }
+    }
+
+    document.addEventListener("mousedown", handleOutsideClick);
+    return () => document.removeEventListener("mousedown", handleOutsideClick);
+  }, []);
 
   function openRowEditor(entry: RegisterEntry) {
     setSelectedEntryId(entry.id);
@@ -359,7 +410,16 @@ export function RegisterTable({
   );
 
   return (
-    <div className="register-table relative overflow-visible bg-white">
+    <>
+      <TablePagination
+        totalItems={filteredEntries.length}
+        currentPage={filteredEntries.length > 0 ? currentPage : 0}
+        totalPages={totalPages}
+        start={paginationStart}
+        end={paginationEnd}
+        onPageChange={setCurrentPage}
+      />
+      <div className="register-table relative overflow-visible bg-white">
       <div className="action-bar flex h-[45px] items-center justify-between border-b border-gray-200 px-4">
         <div className="relative flex items-center gap-1">
           <button
@@ -444,13 +504,43 @@ export function RegisterTable({
           >
             <Upload className="h-[18px] w-[18px]" aria-hidden="true" />
           </button>
-          <button
-            type="button"
-            className="flex h-full items-center hover:text-[var(--color-icon-secondary)]"
-            aria-label="Settings"
-          >
-            <Settings2 className="h-[18px] w-[18px]" aria-hidden="true" />
-          </button>
+          <div className="relative flex h-full items-center" data-settings-popover-root>
+            <button
+              type="button"
+              className="flex h-full items-center hover:text-[var(--color-icon-secondary)]"
+              aria-label="Settings"
+              onClick={() => setIsSettingsPopoverOpen((current) => !current)}
+            >
+              <Settings className="h-[18px] w-[18px]" aria-hidden="true" />
+            </button>
+            {isSettingsPopoverOpen ? (
+              <div className="dgrid-03 absolute">
+                <div className="dgrid-hider-menu">
+                  <div className="hiderMenuConnector" />
+                  <div className="hiderMenuContainer">
+                  <label className="mb-1 block text-[13px] text-gray-700">Rows</label>
+                  <SelectField
+                    value={String(rowsPerPage)}
+                    onChange={(value) => {
+                      const nextRows = Number(value);
+                      if (!Number.isFinite(nextRows)) return;
+                      setRowsPerPage(nextRows);
+                      setCurrentPage(1);
+                      setIsSettingsPopoverOpen(false);
+                    }}
+                    options={ROWS_PER_PAGE_OPTIONS.map((option) => ({
+                      value: String(option),
+                      label: String(option)
+                    }))}
+                    placeholder="Rows"
+                    allowCustomValue={false}
+                    optionSize="sm"
+                  />
+                  </div>
+                </div>
+              </div>
+            ) : null}
+          </div>
         </div>
       </div>
 
@@ -529,6 +619,18 @@ export function RegisterTable({
         )}
       </div>
 
+      </div>
+      <TablePagination
+        totalItems={filteredEntries.length}
+        currentPage={filteredEntries.length > 0 ? currentPage : 0}
+        totalPages={totalPages}
+        start={paginationStart}
+        end={paginationEnd}
+        onPageChange={setCurrentPage}
+      />
+      {/**
+       * Aqui
+       */}
       <PayeeSideModal
         open={isPayeeModalOpen}
         onClose={() => setIsPayeeModalOpen(false)}
@@ -546,6 +648,6 @@ export function RegisterTable({
           }
         }}
       />
-    </div>
+    </>
   );
 }
