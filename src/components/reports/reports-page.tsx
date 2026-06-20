@@ -13,7 +13,7 @@ import {
   REPORT_PERIOD_OPTIONS,
   REPORT_USER_NAME
 } from "@/constants/ui";
-import { getServiceContainer } from "@/lib/services/service-container";
+import { getServiceContainer } from "@/lib/services/service-container-v2";
 import { DEBIT_NORMAL_CATEGORIES } from "@/modules/accounting/domain/accounting-reports";
 import type { Account, LedgerPosting } from "@/modules/accounting/domain/models";
 
