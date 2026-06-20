@@ -111,8 +111,8 @@ export function SelectField({
   }
 
   const optionTextClassName = optionSize === "sm" ? "text-[13px]" : "text-sm";
-  const optionLabelClassName = optionSize === "sm" ? "text-[13px] text-gray-700" : "text-left text-gray-700";
-  const optionRightLabelClassName = optionSize === "sm" ? "text-[13px] text-gray-500" : "text-right text-gray-500";
+  const optionLabelClassName = optionSize === "sm" ? "text-[13px] text-[var(--color-text-primary)]" : "text-left text-[var(--color-text-primary)]";
+  const optionRightLabelClassName = optionSize === "sm" ? "text-[13px] text-[var(--color-icon-secondary)]" : "text-right text-[var(--color-icon-secondary)]";
 
   return (
     <div
@@ -152,7 +152,7 @@ export function SelectField({
               setQuery(selectedOption?.label ?? "");
             }
           }}
-          className="absolute right-2 top-1/2 -translate-y-1/2 rounded text-gray-600 hover:bg-gray-100 disabled:cursor-not-allowed disabled:text-gray-400"
+          className="absolute right-2 top-1/2 -translate-y-1/2 rounded text-[var(--color-icon-secondary)] hover:bg-[var(--color-action-passive-subtle-hover)] disabled:cursor-not-allowed disabled:text-[var(--color-text-disabled)]"
           aria-label="Toggle options list"
         >
           <SelectorChevronIcon />
@@ -160,7 +160,7 @@ export function SelectField({
       </div>
 
       {isOpen && !disabled ? (
-        <div className="absolute left-0 z-50 mt-1 max-h-64 w-max min-w-full max-w-[min(90vw,56rem)] overflow-y-auto rounded border border-gray-200 bg-white py-1 shadow-md">
+        <div className="absolute left-0 z-50 mt-1 max-h-64 w-max min-w-full max-w-[min(90vw,56rem)] overflow-y-auto rounded border border-[var(--color-divider-tertiary)] bg-[var(--color-container-background-primary)] py-1 shadow-md">
           {onAddNew ? (
             <button
               type="button"
@@ -170,7 +170,7 @@ export function SelectField({
                 setIsFiltering(false);
                 onAddNew();
               }}
-              className="block w-full border-b border-gray-200 px-4 py-2 text-left text-sm font-medium text-blue-600 hover:bg-gray-100"
+              className="block w-full border-b border-[var(--color-divider-tertiary)] px-4 py-2 text-left text-sm font-medium text-[var(--color-link-text)] hover:bg-[var(--color-action-passive-subtle-hover)]"
             >
               {addNewLabel}
             </button>
@@ -186,7 +186,7 @@ export function SelectField({
                 className={`selector-option grid w-full grid-cols-[minmax(0,1fr)_auto] items-center gap-4 px-4 py-2 text-left ${
                   option.value === value
                     ? `selector-option-selected ${optionTextClassName}`
-                    : `${optionTextClassName} hover:bg-gray-100`
+                    : `${optionTextClassName} hover:bg-[var(--color-action-passive-subtle-hover)]`
                 }`}
               >
                 <span className={`selector-option-label whitespace-nowrap ${optionLabelClassName}`}>{option.label}</span>
@@ -196,7 +196,7 @@ export function SelectField({
               </button>
             ))
           ) : (
-            <p className="px-4 py-2 text-sm text-gray-500">No matches</p>
+            <p className="px-4 py-2 text-sm text-[var(--color-icon-secondary)]">No matches</p>
           )}
         </div>
       ) : null}

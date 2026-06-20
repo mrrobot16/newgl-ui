@@ -35,7 +35,7 @@ export function SideNav() {
   const isBooksSelected = pathname.startsWith("/reports");
 
   return (
-    <aside className="side-nav flex h-full w-[73px] flex-col justify-between bg-[#f0f4f6]">
+    <aside className="side-nav flex h-full w-[73px] flex-col justify-between bg-[var(--color-sidebar-background)]">
       <div className="flex flex-col">
         <Link href="/" className="mx-[4px] flex h-[72px] items-center justify-center" aria-label="Go to home">
           <Image src="/logo.svg" alt="Quickslike logo" width={26} height={26} priority />

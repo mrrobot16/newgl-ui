@@ -7,7 +7,7 @@
 }
 
 body {
-  background: #f5f7fb;
-  color: #111827;
+  background: var(--color-container-background-accent);
+  color: var(--color-text-global);
   font-family: var(--app-font-family);
 }

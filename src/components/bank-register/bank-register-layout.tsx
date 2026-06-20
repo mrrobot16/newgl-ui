@@ -57,7 +57,7 @@ export function BankRegisterLayout() {
   );
 
   return (
-    <main className="tw-override main bg-white text-sm text-gray-800">
+    <main className="tw-override main bg-[var(--color-container-background-primary)] text-sm text-[var(--color-text-primary)]">
       <header className="header mb-4 space-y-4">
         <div className="w-full flex flex-wrap items-center justify-between gap-4">
           <div className="">

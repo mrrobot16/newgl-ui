@@ -3,10 +3,11 @@ import type { ReactNode } from "react";
 import { AppShell } from "@/components/layout/app-shell";
 import "./globals.css";
 import "../styles/tailwind-overrides.css";
+import { ThemeProvider } from "@/components/theme";
 
 export const metadata: Metadata = {
-  title: "Quickslike Bank Register",
-  description: "Spec-driven event-based accounting UI"
+  title: "New GL",
+  description: "The GL of accountants, by accountants, for accountants."
 };
 
 type RootLayoutProps = Readonly<{
@@ -15,9 +16,11 @@ type RootLayoutProps = Readonly<{
 
 export default function RootLayout({ children }: RootLayoutProps) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <body>
-        <AppShell>{children}</AppShell>
+        <ThemeProvider>
+          <AppShell>{children}</AppShell>
+        </ThemeProvider>
       </body>
     </html>
   );

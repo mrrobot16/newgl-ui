@@ -65,7 +65,7 @@ export function ActionToolbar({
       </button>
 
       {isOpen ? (
-        <div className="absolute top-10 z-50 min-w-40 rounded border border-gray-200 bg-white py-1 shadow-md">
+        <div className="absolute top-10 z-50 min-w-40 rounded border border-[var(--color-divider-tertiary)] bg-[var(--color-container-background-primary)] py-1 shadow-md">
           {availableTransactionTypes.map((transactionType) => (
             <button
               key={transactionType.id}
@@ -76,8 +76,8 @@ export function ActionToolbar({
               }}
               className={`block w-full px-4 py-2 text-left text-sm ${
                 transactionType.id === selectedTransactionType
-                  ? "bg-gray-100 font-medium text-gray-900"
-                  : "text-gray-700 hover:bg-gray-100"
+                  ? "bg-[var(--color-action-passive-subtle-active)] font-medium text-[var(--color-text-global)]"
+                  : "text-[var(--color-text-primary)] hover:bg-[var(--color-action-passive-subtle-hover)]"
               }`}
             >
               {transactionType.label}

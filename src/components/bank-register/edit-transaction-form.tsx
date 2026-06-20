@@ -57,7 +57,7 @@ export function EditTransactionForm({
                   type="date"
                   value={editor.date}
                   onChange={(event) => onEditorChange("date", event.target.value)}
-                  className="w-full placeholder:text-gray-400"
+                  className="w-full placeholder:text-[var(--color-text-disabled)]"
                 />
               </td>
               <td className="form-control">
@@ -65,7 +65,7 @@ export function EditTransactionForm({
                   type="text"
                   value={editor.refNo}
                   onChange={(event) => onEditorChange("refNo", event.target.value)}
-                  className="w-full placeholder:text-gray-400"
+                  className="w-full placeholder:text-[var(--color-text-disabled)]"
                 />
                 <InputField type="text" value={entry.transactionType} disabled className="mt-1 w-full" />
               </td>
@@ -92,7 +92,7 @@ export function EditTransactionForm({
                   value={editor.memo}
                   onChange={(event) => onEditorChange("memo", event.target.value)}
                   placeholder="Memo"
-                  className="w-full placeholder:text-gray-400"
+                  className="w-full placeholder:text-[var(--color-text-disabled)]"
                 />
               </td>
               <td className="form-control">
@@ -104,7 +104,7 @@ export function EditTransactionForm({
                   disabled={isPaymentDisabled}
                   onChange={(event) => onEditorChange("payment", event.target.value)}
                   placeholder="0.00"
-                  className="w-full text-right placeholder:text-gray-400"
+                  className="w-full text-right placeholder:text-[var(--color-text-disabled)]"
                 />
               </td>
               <td className="form-control">
@@ -116,12 +116,12 @@ export function EditTransactionForm({
                   disabled={isDepositDisabled}
                   onChange={(event) => onEditorChange("deposit", event.target.value)}
                   placeholder="0.00"
-                  className="w-full text-right placeholder:text-gray-400"
+                  className="w-full text-right placeholder:text-[var(--color-text-disabled)]"
                 />
               </td>
               <ReconcileStatusCell status={editor.reconcileStatus} onCycle={onReconcileCycle} />
               <td className="form-control">
-                <div className="rounded border border-gray-200 bg-gray-100 px-2 py-1 text-right text-xs text-gray-500">-</div>
+                <div className="rounded border border-[var(--color-divider-tertiary)] bg-[var(--color-container-background-secondary)] px-2 py-1 text-right text-xs text-[var(--color-icon-secondary)]">-</div>
               </td>
             </tr>
           </tbody>

@@ -13,7 +13,7 @@ export function TablePagination({ totalItems, currentPage, totalPages, start, en
   const hasPages = totalItems > 0 && totalPages > 0;
 
   const linkBaseClass = "text-sm transition-colors";
-  const enabledClass = "text-gray-700 hover:text-[var(--color-text-highlight)]";
+  const enabledClass = "text-[var(--color-text-primary)] hover:text-[var(--color-text-highlight)]";
   const disabledClass = "pointer-events-none cursor-not-allowed text-[var(--color-text-disabled)]";
 
   const linkClass = (enabled: boolean) =>
@@ -26,7 +26,7 @@ export function TablePagination({ totalItems, currentPage, totalPages, start, en
 
   return (
     <div className="m-0 mb-5 flex justify-end px-[5px] py-0">
-      <div className="flex flex-wrap items-center gap-2 text-sm text-gray-700">
+      <div className="flex flex-wrap items-center gap-2 text-sm text-[var(--color-text-primary)]">
         <span>Go to:</span>
         <a href="#" aria-disabled={!hasPages} className={linkClass(hasPages)} onClick={(event) => handleLinkClick(event)}>
           {currentPage}

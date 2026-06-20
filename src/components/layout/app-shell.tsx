@@ -8,7 +8,7 @@ type AppShellProps = Readonly<{
 
 export function AppShell({ children }: AppShellProps) {
   return (
-    <div className="h-screen bg-[#f4f5f8] p-[6px] pl-0">
+    <div className="h-screen bg-[var(--color-container-background-accent)] p-[6px] pl-0">
       <div className="flex h-full">
         <SideNav />
         <div className="flex min-w-0 flex-1 flex-col">

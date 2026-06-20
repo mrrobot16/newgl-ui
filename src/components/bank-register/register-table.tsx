@@ -66,12 +66,12 @@ type RegisterTableProps = {
 
 function rowStyle(status: RegisterEntry["status"]): string {
   if (status === "VOIDED" || status === "DELETED") {
-    return "line-through text-gray-400";
+    return "line-through text-[var(--color-text-disabled)]";
   }
   if (status === "DRAFT") {
-    return "text-gray-700";
+    return "text-[var(--color-text-primary)]";
   }
-  return "text-gray-800";
+  return "text-[var(--color-text-primary)]";
 }
 
 function formatTransactionTypeLabel(transactionType: RegisterEntry["transactionType"]): string {
@@ -345,8 +345,8 @@ export function RegisterTable({
       <table className="group w-full min-w-[1025px] table-fixed border-collapse text-sm">
         <RegisterTableColumnGroup />
         <tbody>
-          <tr className={`cursor-pointer group-hover:bg-[#f3f8fe] ${rowStyle(entry.status)}`} onClick={() => openRowEditor(entry)}>
-            <td className="p-2 text-[13px] align-top text-gray-800">
+          <tr className={`cursor-pointer group-hover:bg-[var(--color-table-row-hover)] ${rowStyle(entry.status)}`} onClick={() => openRowEditor(entry)}>
+            <td className="p-2 text-[13px] align-top text-[var(--color-text-primary)]">
               {entry.date}
             </td>
             <td className="border-l border-l-dotted border-l-[var(--color-divider-tertiary)] p-2 text-[13px] align-top">
@@ -355,48 +355,48 @@ export function RegisterTable({
             <td className="border-l border-l-dotted border-l-[var(--color-divider-tertiary)] p-2 text-[13px] align-top">
               {entry.payee ?? ""}
             </td>
-            <td className="border-l border-l-dotted border-l-[var(--color-divider-tertiary)] p-2 text-[13px] align-top text-gray-800">
+            <td className="border-l border-l-dotted border-l-[var(--color-divider-tertiary)] p-2 text-[13px] align-top text-[var(--color-text-primary)]">
               {entry.memo ?? ""}
             </td>
-            <td className="border-l border-l-dotted border-l-[var(--color-divider-tertiary)] p-2 text-[13px] text-right align-top text-gray-800">
+            <td className="border-l border-l-dotted border-l-[var(--color-divider-tertiary)] p-2 text-[13px] text-right align-top text-[var(--color-text-primary)]">
               {entry.payment ? entry.payment.toFixed(2) : ""}
             </td>
-            <td className="border-l border-l-dotted border-l-[var(--color-divider-tertiary)] p-2 text-[13px] text-right align-top text-gray-800">
+            <td className="border-l border-l-dotted border-l-[var(--color-divider-tertiary)] p-2 text-[13px] text-right align-top text-[var(--color-text-primary)]">
               {entry.deposit ? entry.deposit.toFixed(2) : ""}
             </td>
-            <td className="border-l text-center border-l-dotted border-l-[var(--color-divider-tertiary)] p-2 text-[13px] align-top text-gray-800">
+            <td className="border-l text-center border-l-dotted border-l-[var(--color-divider-tertiary)] p-2 text-[13px] align-top text-[var(--color-text-primary)]">
               {entry.reconcileStatus}
             </td>
-            <td className="p-2 border-l border-l-dotted border-l-[var(--color-divider-tertiary)] text-[13px] text-right align-top font-medium text-gray-900">
+            <td className="p-2 border-l border-l-dotted border-l-[var(--color-divider-tertiary)] text-[13px] text-right align-top font-medium text-[var(--color-text-global)]">
               {entry.runningBalance.toFixed(2)}
             </td>
           </tr>
           <tr
-            className={`cursor-pointer border-b border-gray-100 bg-[#f9fafb] group-hover:bg-[#ebf0f7]`}
+            className={`cursor-pointer border-b border-[var(--color-divider-tertiary)] bg-[var(--color-table-row-secondary)] group-hover:bg-[var(--color-table-row-secondary-hover)]`}
             onClick={() => openRowEditor(entry)}
           >
-            <td className="p-2 text-[13px] align-top text-gray-500">
+            <td className="p-2 text-[13px] align-top text-[var(--color-icon-secondary)]">
               &nbsp;
             </td>
-            <td className="border-l border-l-dotted border-l-[var(--color-divider-tertiary)] p-2 text-[13px] align-top text-gray-500">
+            <td className="border-l border-l-dotted border-l-[var(--color-divider-tertiary)] p-2 text-[13px] align-top text-[var(--color-icon-secondary)]">
               {formatTransactionTypeLabel(entry.transactionType)}
             </td>
-            <td className="border-l border-l-dotted border-l-[var(--color-divider-tertiary)] p-2 text-[13px] align-top text-gray-500">
+            <td className="border-l border-l-dotted border-l-[var(--color-divider-tertiary)] p-2 text-[13px] align-top text-[var(--color-icon-secondary)]">
               {entry.accountLabel ?? ""}
             </td>
-            <td className="border-l border-l-dotted border-l-[var(--color-divider-tertiary)] p-2 text-[13px] align-top text-gray-500">
+            <td className="border-l border-l-dotted border-l-[var(--color-divider-tertiary)] p-2 text-[13px] align-top text-[var(--color-icon-secondary)]">
               &nbsp;
             </td>
-            <td className="border-l border-l-dotted border-l-[var(--color-divider-tertiary)] p-2 text-[13px] text-right align-top text-gray-500">
+            <td className="border-l border-l-dotted border-l-[var(--color-divider-tertiary)] p-2 text-[13px] text-right align-top text-[var(--color-icon-secondary)]">
               &nbsp;
             </td>
-            <td className="border-l border-l-dotted border-l-[var(--color-divider-tertiary)] p-2 text-[13px] text-right align-top text-gray-500">
+            <td className="border-l border-l-dotted border-l-[var(--color-divider-tertiary)] p-2 text-[13px] text-right align-top text-[var(--color-icon-secondary)]">
               &nbsp;
             </td>
-            <td className="border-l border-l-dotted border-l-[var(--color-divider-tertiary)] p-2 text-[13px] text-center align-top text-gray-500">
+            <td className="border-l border-l-dotted border-l-[var(--color-divider-tertiary)] p-2 text-[13px] text-center align-top text-[var(--color-icon-secondary)]">
               &nbsp;
             </td>
-            <td className="p-2 border-l border-l-dotted border-l-[var(--color-divider-tertiary)] text-[13px] text-right align-top text-gray-500">&nbsp;</td>
+            <td className="p-2 border-l border-l-dotted border-l-[var(--color-divider-tertiary)] text-[13px] text-right align-top text-[var(--color-icon-secondary)]">&nbsp;</td>
           </tr>
         </tbody>
       </table>
@@ -413,13 +413,13 @@ export function RegisterTable({
         end={paginationEnd}
         onPageChange={setCurrentPage}
       />
-      <div className="register-table relative overflow-visible bg-white">
-      <div className="action-bar flex h-[45px] items-center justify-between border-b border-gray-200 px-4">
+      <div className="register-table relative overflow-visible bg-[var(--color-container-background-primary)]">
+      <div className="action-bar flex h-[45px] items-center justify-between border-b border-[var(--color-divider-tertiary)] px-4">
         <div className="relative flex items-center gap-1">
           <button
             ref={filterButtonRef}
             type="button"
-            className="flex h-full items-center gap-1 text-sm text-[#BABEC5] hover:text-[var(--color-icon-secondary)]"
+            className="flex h-full items-center gap-1 text-sm text-[var(--color-icon-muted)] hover:text-[var(--color-icon-secondary)]"
             aria-label="Filter register rows"
             onClick={() => setIsFilterPopoverOpen((current) => !current)}
           >
@@ -431,12 +431,12 @@ export function RegisterTable({
               {activeFilterChips.map((chip) => (
                 <span
                   key={chip.key}
-                  className="inline-flex items-center gap-1 rounded-full border border-gray-300 bg-white px-2 py-0.5 text-[13px] text-gray-700"
+                  className="inline-flex items-center gap-1 rounded-full border border-[var(--color-container-border-secondary)] bg-[var(--color-container-background-primary)] px-2 py-0.5 text-[13px] text-[var(--color-text-primary)]"
                 >
                   {chip.label}
                   <button
                     type="button"
-                    className="text-gray-500 hover:text-gray-700"
+                    className="text-[var(--color-icon-secondary)] hover:text-[var(--color-text-primary)]"
                     aria-label={`Remove ${chip.label} filter`}
                     onClick={() => removeActiveFilterChip(chip.key)}
                   >
@@ -481,7 +481,7 @@ export function RegisterTable({
             />
           ) : null}
         </div>
-        <div className="flex h-full items-center gap-4 text-[#BABEC5]">
+        <div className="flex h-full items-center gap-4 text-[var(--color-icon-muted)]">
           <button
             type="button"
             className="flex h-full items-center hover:text-[var(--color-icon-secondary)]"
@@ -512,7 +512,7 @@ export function RegisterTable({
                 <div className="dgrid-hider-menu">
                   <div className="hiderMenuConnector" />
                   <div className="hiderMenuContainer">
-                  <label className="mb-1 block text-[13px] text-gray-700">Rows</label>
+                  <label className="mb-1 block text-[13px] text-[var(--color-text-primary)]">Rows</label>
                   <SelectField
                     value={String(rowsPerPage)}
                     onChange={(value) => {
