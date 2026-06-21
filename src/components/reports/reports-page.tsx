@@ -13,11 +13,11 @@ import {
   REPORT_PERIOD_OPTIONS,
   REPORT_USER_NAME
 } from "@/constants/ui";
-import { getServiceContainer } from "@/lib/services/service-container";
+import { getServiceContainer } from "@/lib/services/service-container-v2";
 import { DEBIT_NORMAL_CATEGORIES } from "@/modules/accounting/domain/accounting-reports";
 import type { Account, LedgerPosting } from "@/modules/accounting/domain/models";
 
-type ReportType = "profit_loss" | "balance_sheet";
+type ReportType = "profit_loss" | "balance_sheet" | "cash_flow" | "trial_balance";
 type AccountingMethod = "cash" | "accrual";
 type ReportPeriodPreset =
   | "all_dates"
@@ -35,10 +35,10 @@ type ReportPeriodPreset =
   | "custom";
 
 function isoDate(date: Date): string {
-  const y = date.getFullYear();
-  const m = String(date.getMonth() + 1).padStart(2, "0");
-  const d = String(date.getDate()).padStart(2, "0");
-  return `${y}-${m}-${d}`;
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
 }
 
 function dateRangeForPreset(preset: ReportPeriodPreset, today = new Date()): { from: string; to: string } {
@@ -324,14 +324,14 @@ export function ReportsPage() {
   }, [accounts, accountById, postings, toDate, netIncome]);
 
   return (
-    <main className="tw-override main bg-white text-sm text-gray-800">
+    <main className="tw-override main bg-[var(--color-container-background-primary)] text-sm text-[var(--color-text-primary)]">
       <header className="header header-reports mb-4 ">
         <div className="w-full">
           <h1 className="page-title">Reports</h1>
         </div>
         <div className="header-filters">
           <div>
-            <p className="mb-1 text-[11px] text-[#6b6c72]">Report period</p>
+            <p className="mb-1 text-[11px] text-[var(--color-icon-secondary)]">Report period</p>
             <SelectField
               value={reportPeriod}
               onChange={handlePeriodChange}
@@ -342,25 +342,25 @@ export function ReportsPage() {
             />
           </div>
           <div>
-            <p className="mb-1 text-[11px] text-[#6b6c72]">From</p>
+            <p className="mb-1 text-[11px] text-[var(--color-icon-secondary)]">From</p>
             <InputField type="date" value={fromDate} onChange={(event) => handleFromChange(event.target.value)} />
           </div>
           <div>
-            <p className="mb-1 text-[11px] text-[#6b6c72]">To</p>
+            <p className="mb-1 text-[11px] text-[var(--color-icon-secondary)]">To</p>
             <InputField type="date" value={toDate} onChange={(event) => handleToChange(event.target.value)} />
           </div>
           <div>
-            <p className="mb-1 text-[11px] text-[#6b6c72]">Accounting method</p>
-            <div className="inline-flex h-9 w-full rounded border border-[#8d9096] bg-white p-0.5">
+            <p className="mb-1 text-[11px] text-[var(--color-icon-secondary)]">Accounting method</p>
+            <div className="inline-flex h-9 w-full rounded border border-[var(--color-input-border-primary)] bg-[var(--color-container-background-primary)] p-0.5">
               <button
-                className={`flex-1 rounded text-xs ${accountingMethod === "cash" ? "bg-[#005244] text-white" : "text-[#393a3d]"}`}
+                className={`flex-1 rounded text-xs ${accountingMethod === "cash" ? "bg-[var(--color-report-toggle-active)] text-white" : "text-[var(--color-text-primary)]"}`}
                 onClick={() => setAccountingMethod("cash")}
                 type="button"
               >
                 Cash
               </button>
               <button
-                className={`flex-1 rounded text-xs ${accountingMethod === "accrual" ? "bg-[#005244] text-white" : "text-[#393a3d]"}`}
+                className={`flex-1 rounded text-xs ${accountingMethod === "accrual" ? "bg-[var(--color-report-toggle-active)] text-white" : "text-[var(--color-text-primary)]"}`}
                 onClick={() => setAccountingMethod("accrual")}
                 type="button"
               >
@@ -369,7 +369,7 @@ export function ReportsPage() {
             </div>
           </div>
           <div>
-            <p className="mb-1 text-[11px] text-[#6b6c72]">Display columns by</p>
+            <p className="mb-1 text-[11px] text-[var(--color-icon-secondary)]">Display columns by</p>
             <SelectField
               value={displayColumnsBy}
               onChange={setDisplayColumnsBy}
@@ -380,7 +380,7 @@ export function ReportsPage() {
             />
           </div>
           <div>
-            <p className="mb-1 text-[11px] text-[#6b6c72]">Compare to</p>
+            <p className="mb-1 text-[11px] text-[var(--color-icon-secondary)]">Compare to</p>
             <SelectField
               value={compareTo}
               onChange={setCompareTo}
@@ -394,8 +394,8 @@ export function ReportsPage() {
       </header>
 
       <section className="page-content">
-      <section className="mx-auto mt-8 w-full max-w-[840px] rounded border border-[#d4d7dc] bg-white p-5 shadow-sm">
-        <div className="mb-4 flex flex-wrap items-center justify-between gap-2 border-b border-[#d4d7dc] pb-3">
+      <section className="mx-auto mt-8 w-full max-w-[840px] rounded border border-[var(--color-divider-tertiary)] bg-[var(--color-container-background-primary)] p-5 shadow-sm">
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-2 border-b border-[var(--color-divider-tertiary)] pb-3">
           <div className="flex items-center gap-2">
             <Button
               variant={reportType === "profit_loss" ? "primary" : "secondary"}
@@ -410,16 +410,16 @@ export function ReportsPage() {
               Balance Sheet
             </Button>
           </div>
-          <span className="text-xs text-[#6b6c72]">{accountingMethod === "cash" ? "Cash basis" : "Accrual basis"}</span>
+          <span className="text-xs text-[var(--color-icon-secondary)]">{accountingMethod === "cash" ? "Cash basis" : "Accrual basis"}</span>
         </div>
 
         <div className="mb-4 text-center">
-          <h2 className="text-[28px] font-medium text-[#21262a]">{REPORT_USER_NAME}</h2>
-          <p className="text-[16px] text-[#393a3d]">{reportType === "profit_loss" ? "Profit and Loss" : "Balance Sheet"}</p>
-          <p className="text-xs text-[#6b6c72]">
+          <h2 className="text-[28px] font-medium text-[var(--color-text-global)]">{REPORT_USER_NAME}</h2>
+          <p className="text-[16px] text-[var(--color-text-primary)]">{reportType === "profit_loss" ? "Profit and Loss" : "Balance Sheet"}</p>
+          <p className="text-xs text-[var(--color-icon-secondary)]">
             {reportType === "profit_loss" ? formatAsRange(fromDate, toDate) : `As of ${formatAsRange("", toDate)}`}
           </p>
-          <p className="mt-1 text-[11px] text-[#6b6c72]">
+          <p className="mt-1 text-[11px] text-[var(--color-icon-secondary)]">
             {reportType === "profit_loss" ? "Profit and Loss report is ready" : "Balance Sheet report is ready"}
           </p>
         </div>
@@ -427,51 +427,51 @@ export function ReportsPage() {
         {reportType === "profit_loss" ? (
           <table className="w-full border-collapse text-sm">
             <thead>
-              <tr className="border-y border-[#d4d7dc] bg-[#f4f5f8]">
-                <th className="px-3 py-1 text-left font-medium text-[#393a3d]"> </th>
-                <th className="px-3 py-1 text-right font-medium text-[#393a3d]">Total</th>
+              <tr className="border-y border-[var(--color-divider-tertiary)] bg-[var(--color-container-background-accent)]">
+                <th className="px-3 py-1 text-left font-medium text-[var(--color-text-primary)]"> </th>
+                <th className="px-3 py-1 text-right font-medium text-[var(--color-text-primary)]">Total</th>
               </tr>
             </thead>
             <tbody>
-              <tr className="border-b border-[#eceef1] bg-[#f8f9fb]">
-                <td className="px-3 py-1 font-medium text-[#393a3d]">Income</td>
+              <tr className="border-b border-[var(--color-container-background-secondary)] bg-[var(--color-report-row-alt)]">
+                <td className="px-3 py-1 font-medium text-[var(--color-text-primary)]">Income</td>
                 <td />
               </tr>
               {profitAndLossData.incomeRows.map((row) => (
-                <tr key={`income-${row.name}`} className="border-b border-[#eceef1]">
-                  <td className="px-6 py-1 text-[#393a3d]">{row.name}</td>
+                <tr key={`income-${row.name}`} className="border-b border-[var(--color-container-background-secondary)]">
+                  <td className="px-6 py-1 text-[var(--color-text-primary)]">{row.name}</td>
                   <td className="px-3 py-1 text-right">{formatMoney(row.amount)}</td>
                 </tr>
               ))}
-              <tr className="border-b border-[#d4d7dc]">
-                <td className="px-3 py-1 font-semibold text-[#393a3d]">Total for Income</td>
+              <tr className="border-b border-[var(--color-divider-tertiary)]">
+                <td className="px-3 py-1 font-semibold text-[var(--color-text-primary)]">Total for Income</td>
                 <td className="px-3 py-1 text-right font-semibold">{formatMoney(profitAndLossData.totalIncome)}</td>
               </tr>
-              <tr className="border-b border-[#d4d7dc] bg-[#f8f9fb]">
-                <td className="px-3 py-1 font-semibold text-[#393a3d]">Gross Profit</td>
+              <tr className="border-b border-[var(--color-divider-tertiary)] bg-[var(--color-report-row-alt)]">
+                <td className="px-3 py-1 font-semibold text-[var(--color-text-primary)]">Gross Profit</td>
                 <td className="px-3 py-1 text-right font-semibold">{formatMoney(profitAndLossData.totalIncome)}</td>
               </tr>
 
-              <tr className="border-b border-[#eceef1] bg-[#f8f9fb]">
-                <td className="px-3 py-1 font-medium text-[#393a3d]">Expenses</td>
+              <tr className="border-b border-[var(--color-container-background-secondary)] bg-[var(--color-report-row-alt)]">
+                <td className="px-3 py-1 font-medium text-[var(--color-text-primary)]">Expenses</td>
                 <td />
               </tr>
               {profitAndLossData.expenseRows.map((row) => (
-                <tr key={`expense-${row.name}`} className="border-b border-[#eceef1]">
-                  <td className="px-6 py-1 text-[#393a3d]">{row.name}</td>
+                <tr key={`expense-${row.name}`} className="border-b border-[var(--color-container-background-secondary)]">
+                  <td className="px-6 py-1 text-[var(--color-text-primary)]">{row.name}</td>
                   <td className="px-3 py-1 text-right">{formatMoney(row.amount)}</td>
                 </tr>
               ))}
-              <tr className="border-b border-[#d4d7dc]">
-                <td className="px-3 py-1 font-semibold text-[#393a3d]">Total for Expenses</td>
+              <tr className="border-b border-[var(--color-divider-tertiary)]">
+                <td className="px-3 py-1 font-semibold text-[var(--color-text-primary)]">Total for Expenses</td>
                 <td className="px-3 py-1 text-right font-semibold">{formatMoney(profitAndLossData.totalExpense)}</td>
               </tr>
-              <tr className="border-b border-[#d4d7dc] bg-[#f8f9fb]">
-                <td className="px-3 py-1 font-semibold text-[#393a3d]">Net Operating Income</td>
+              <tr className="border-b border-[var(--color-divider-tertiary)] bg-[var(--color-report-row-alt)]">
+                <td className="px-3 py-1 font-semibold text-[var(--color-text-primary)]">Net Operating Income</td>
                 <td className="px-3 py-1 text-right font-semibold">{formatMoney(profitAndLossData.operatingIncome)}</td>
               </tr>
-              <tr className="border-b border-[#d4d7dc] bg-[#f8f9fb]">
-                <td className="px-3 py-1 font-semibold text-[#393a3d]">Net Income</td>
+              <tr className="border-b border-[var(--color-divider-tertiary)] bg-[var(--color-report-row-alt)]">
+                <td className="px-3 py-1 font-semibold text-[var(--color-text-primary)]">Net Income</td>
                 <td className="px-3 py-1 text-right font-semibold">{formatMoney(profitAndLossData.netIncome)}</td>
               </tr>
             </tbody>
@@ -479,81 +479,81 @@ export function ReportsPage() {
         ) : (
           <table className="w-full border-collapse text-sm">
             <thead>
-              <tr className="border-y border-[#d4d7dc] bg-[#f4f5f8]">
-                <th className="px-3 py-1 text-left font-medium text-[#393a3d]"> </th>
-                <th className="px-3 py-1 text-right font-medium text-[#393a3d]">Total</th>
+              <tr className="border-y border-[var(--color-divider-tertiary)] bg-[var(--color-container-background-accent)]">
+                <th className="px-3 py-1 text-left font-medium text-[var(--color-text-primary)]"> </th>
+                <th className="px-3 py-1 text-right font-medium text-[var(--color-text-primary)]">Total</th>
               </tr>
             </thead>
             <tbody>
-              <tr className="border-b border-[#eceef1] bg-[#f8f9fb]">
+              <tr className="border-b border-[var(--color-container-background-secondary)] bg-[var(--color-report-row-alt)]">
                 <td className="px-3 py-1 font-medium">Assets</td>
                 <td />
               </tr>
-              <tr className="border-b border-[#eceef1]">
+              <tr className="border-b border-[var(--color-container-background-secondary)]">
                 <td className="px-4 py-1 font-medium">Current Assets</td>
                 <td />
               </tr>
-              <tr className="border-b border-[#eceef1]">
+              <tr className="border-b border-[var(--color-container-background-secondary)]">
                 <td className="px-6 py-1 font-medium">Bank Accounts</td>
                 <td />
               </tr>
               {balanceSheetData.bankAccounts.map((row) => (
-                <tr key={`bank-${row.name}`} className="border-b border-[#eceef1]">
+                <tr key={`bank-${row.name}`} className="border-b border-[var(--color-container-background-secondary)]">
                   <td className="px-8 py-1">{row.name}</td>
                   <td className="px-3 py-1 text-right">{formatMoney(row.amount)}</td>
                 </tr>
               ))}
-              <tr className="border-b border-[#eceef1]">
+              <tr className="border-b border-[var(--color-container-background-secondary)]">
                 <td className="px-6 py-1 font-semibold">Total for Bank Accounts</td>
                 <td className="px-3 py-1 text-right font-semibold">{formatMoney(balanceSheetData.totalBankAccounts)}</td>
               </tr>
-              <tr className="border-b border-[#eceef1]">
+              <tr className="border-b border-[var(--color-container-background-secondary)]">
                 <td className="px-4 py-1 font-semibold">Total for Current Assets</td>
                 <td className="px-3 py-1 text-right font-semibold">{formatMoney(balanceSheetData.totalCurrentAssets)}</td>
               </tr>
-              <tr className="border-b border-[#d4d7dc] bg-[#f8f9fb]">
+              <tr className="border-b border-[var(--color-divider-tertiary)] bg-[var(--color-report-row-alt)]">
                 <td className="px-3 py-1 font-semibold">Total for Assets</td>
                 <td className="px-3 py-1 text-right font-semibold">{formatMoney(balanceSheetData.totalAssets)}</td>
               </tr>
 
-              <tr className="border-b border-[#eceef1] bg-[#f8f9fb]">
+              <tr className="border-b border-[var(--color-container-background-secondary)] bg-[var(--color-report-row-alt)]">
                 <td className="px-3 py-1 font-medium">Liabilities and Equity</td>
                 <td />
               </tr>
-              <tr className="border-b border-[#eceef1]">
+              <tr className="border-b border-[var(--color-container-background-secondary)]">
                 <td className="px-4 py-1 font-medium">Liabilities</td>
                 <td />
               </tr>
               {balanceSheetData.liabilities.map((row) => (
-                <tr key={`liability-${row.name}`} className="border-b border-[#eceef1]">
+                <tr key={`liability-${row.name}`} className="border-b border-[var(--color-container-background-secondary)]">
                   <td className="px-6 py-1">{row.name}</td>
                   <td className="px-3 py-1 text-right">{formatMoney(row.amount)}</td>
                 </tr>
               ))}
-              <tr className="border-b border-[#eceef1]">
+              <tr className="border-b border-[var(--color-container-background-secondary)]">
                 <td className="px-4 py-1 font-semibold">Total for Liabilities</td>
                 <td className="px-3 py-1 text-right font-semibold">{formatMoney(balanceSheetData.totalLiabilities)}</td>
               </tr>
 
-              <tr className="border-b border-[#eceef1]">
+              <tr className="border-b border-[var(--color-container-background-secondary)]">
                 <td className="px-4 py-1 font-medium">Equity</td>
                 <td />
               </tr>
               {balanceSheetData.equityRows.map((row) => (
-                <tr key={`equity-${row.name}`} className="border-b border-[#eceef1]">
+                <tr key={`equity-${row.name}`} className="border-b border-[var(--color-container-background-secondary)]">
                   <td className="px-6 py-1">{row.name}</td>
                   <td className="px-3 py-1 text-right">{formatMoney(row.amount)}</td>
                 </tr>
               ))}
-              <tr className="border-b border-[#eceef1]">
+              <tr className="border-b border-[var(--color-container-background-secondary)]">
                 <td className="px-6 py-1">Net Income</td>
                 <td className="px-3 py-1 text-right">{formatMoney(balanceSheetData.netIncome)}</td>
               </tr>
-              <tr className="border-b border-[#eceef1]">
+              <tr className="border-b border-[var(--color-container-background-secondary)]">
                 <td className="px-4 py-1 font-semibold">Total for Equity</td>
                 <td className="px-3 py-1 text-right font-semibold">{formatMoney(balanceSheetData.totalEquity)}</td>
               </tr>
-              <tr className="border-b border-[#d4d7dc] bg-[#f8f9fb]">
+              <tr className="border-b border-[var(--color-divider-tertiary)] bg-[var(--color-report-row-alt)]">
                 <td className="px-3 py-1 font-semibold">Total for Liabilities and Equity</td>
                 <td className="px-3 py-1 text-right font-semibold">{formatMoney(balanceSheetData.totalLiabilitiesAndEquity)}</td>
               </tr>

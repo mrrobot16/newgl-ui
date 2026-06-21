@@ -63,11 +63,11 @@ export function FilterFormPopover({
   return (
     <div
       ref={popoverRef}
-      className="form-popover absolute left-0 top-full z-50 mt-1 w-[530px] overflow-visible rounded-md border border-gray-200 bg-white p-0 pt-[5px] shadow-lg"
+      className="form-popover absolute left-0 top-full z-50 mt-1 w-[530px] overflow-visible rounded-md border border-[var(--color-divider-tertiary)] bg-[var(--color-container-background-primary)] p-0 pt-[5px] shadow-lg"
     >
       <div className="space-y-3 px-4 pb-4">
         <div>
-          <label className="mb-1 block text-xs font-semibold text-gray-700">Find</label>
+          <label className="mb-1 block text-xs font-semibold text-[var(--color-text-primary)]">Find</label>
           <InputField
             type="text"
             value={filterDraft.find}
@@ -79,7 +79,7 @@ export function FilterFormPopover({
 
         <div className="grid grid-cols-3 gap-3">
           <div>
-            <label className="mb-1 block text-xs font-semibold text-gray-700">Reconcile status</label>
+            <label className="mb-1 block text-xs font-semibold text-[var(--color-text-primary)]">Reconcile status</label>
             <SelectField
               value={filterDraft.reconcileStatus}
               onChange={onReconcileStatusChange}
@@ -90,7 +90,7 @@ export function FilterFormPopover({
             />
           </div>
           <div>
-            <label className="mb-1 block text-xs font-semibold text-gray-700">Transaction type</label>
+            <label className="mb-1 block text-xs font-semibold text-[var(--color-text-primary)]">Transaction type</label>
             <SelectField
               value={filterDraft.transactionType}
               onChange={onTransactionTypeChange}
@@ -101,7 +101,7 @@ export function FilterFormPopover({
             />
           </div>
           <div>
-            <label className="mb-1 block text-xs font-semibold text-gray-700">Payee</label>
+            <label className="mb-1 block text-xs font-semibold text-[var(--color-text-primary)]">Payee</label>
             <SelectField
               value={filterDraft.payee}
               onChange={onPayeeChange}
@@ -115,7 +115,7 @@ export function FilterFormPopover({
 
         <div className="grid grid-cols-3 gap-3">
           <div>
-            <label className="mb-1 block text-xs font-semibold text-gray-700">Date</label>
+            <label className="mb-1 block text-xs font-semibold text-[var(--color-text-primary)]">Date</label>
             <SelectField
               value={filterDraft.datePreset}
               onChange={onDatePresetChange}
@@ -126,7 +126,7 @@ export function FilterFormPopover({
             />
           </div>
           <div>
-            <label className="mb-1 block text-xs font-semibold text-gray-700">From</label>
+            <label className="mb-1 block text-xs font-semibold text-[var(--color-text-primary)]">From</label>
             <InputField
               type={isFromDateActive || Boolean(filterDraft.from) ? "date" : "text"}
               value={filterDraft.from || ""}
@@ -138,7 +138,7 @@ export function FilterFormPopover({
             />
           </div>
           <div>
-            <label className="mb-1 block text-xs font-semibold text-gray-700">To</label>
+            <label className="mb-1 block text-xs font-semibold text-[var(--color-text-primary)]">To</label>
             <InputField
               type={isToDateActive || Boolean(filterDraft.to) ? "date" : "text"}
               value={filterDraft.to || ""}

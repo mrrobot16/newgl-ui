@@ -2,7 +2,7 @@ import type { ReconcileStatus } from "@/modules/accounting/domain/models";
 
 export function reconcileStatusClassName(status: ReconcileStatus): string {
   if (status === "C") {
-    return "text-gray-500 font-medium text-sm";
+    return "text-[var(--color-icon-secondary)] font-medium text-sm";
   }
   if (status === "R") {
     return "text-green-600 font-medium text-sm";
@@ -24,7 +24,7 @@ export function ReconcileStatusCell({ status, className = "", onCycle }: Reconci
           event.stopPropagation();
           onCycle();
         }}
-        className={`flex h-[32px] w-full rounded-full cursor-pointer items-center justify-center bg-white text-[13px] ${className}`.trim()}
+        className={`flex h-[32px] w-full rounded-full cursor-pointer items-center justify-center bg-[var(--color-input-background)] text-[13px] ${className}`.trim()}
       >
         <span className={reconcileStatusClassName(status)}>{status}</span>
       </div>
