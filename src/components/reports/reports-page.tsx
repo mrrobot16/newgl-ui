@@ -13,6 +13,8 @@ import {
   REPORT_PERIOD_OPTIONS,
   REPORT_USER_NAME
 } from "@/constants/ui";
+import { buildHierarchyRows } from "@/lib/accounting/account-hierarchy";
+import { ReportSection } from "@/components/reports/report-section";
 import { getServiceContainer } from "@/lib/services/service-container-v2";
 import { DEBIT_NORMAL_CATEGORIES } from "@/modules/accounting/domain/accounting-reports";
 import type { Account, LedgerPosting } from "@/modules/accounting/domain/models";
@@ -162,6 +164,14 @@ export function ReportsPage() {
   const [compareTo, setCompareTo] = useState<string>(REPORT_DEFAULT_COMPARE_TO);
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [postings, setPostings] = useState<LedgerPosting[]>([]);
+  const [openSections, setOpenSections] = useState<Record<string, boolean>>({
+    income: true,
+    expenses: true
+  });
+
+  function toggleSection(key: string) {
+    setOpenSections((prev) => ({ ...prev, [key]: !prev[key] }));
+  }
 
   useEffect(() => {
     const range = dateRangeForPreset(REPORT_DEFAULT_PERIOD);
@@ -433,39 +443,53 @@ export function ReportsPage() {
               </tr>
             </thead>
             <tbody>
-              <tr className="border-b border-[var(--color-container-background-secondary)] bg-[var(--color-report-row-alt)]">
-                <td className="px-3 py-1 font-medium text-[var(--color-text-primary)]">Income</td>
-                <td />
-              </tr>
-              {profitAndLossData.incomeRows.map((row) => (
-                <tr key={`income-${row.name}`} className="border-b border-[var(--color-container-background-secondary)]">
-                  <td className="px-6 py-1 text-[var(--color-text-primary)]">{row.name}</td>
-                  <td className="px-3 py-1 text-right">{formatMoney(row.amount)}</td>
+              <ReportSection
+                label="Income"
+                isOpen={openSections.income ?? true}
+                onToggle={() => toggleSection("income")}
+              >
+                {buildHierarchyRows(profitAndLossData.incomeRows).map((row) => (
+                  <tr key={`income-${row.fullName}`} className="border-b border-[var(--color-container-background-secondary)]">
+                    <td
+                      className="py-1 pr-3 text-[var(--color-text-primary)]"
+                      style={{ paddingLeft: `${1.5 + row.depth * 1.5}rem` }}
+                    >
+                      {row.label}
+                    </td>
+                    <td className="px-3 py-1 text-right">{formatMoney(row.amount)}</td>
+                  </tr>
+                ))}
+                <tr className="border-b border-[var(--color-divider-tertiary)]">
+                  <td className="px-3 py-1 font-semibold text-[var(--color-text-primary)]">Total for Income</td>
+                  <td className="px-3 py-1 text-right font-semibold">{formatMoney(profitAndLossData.totalIncome)}</td>
                 </tr>
-              ))}
-              <tr className="border-b border-[var(--color-divider-tertiary)]">
-                <td className="px-3 py-1 font-semibold text-[var(--color-text-primary)]">Total for Income</td>
-                <td className="px-3 py-1 text-right font-semibold">{formatMoney(profitAndLossData.totalIncome)}</td>
-              </tr>
+              </ReportSection>
               <tr className="border-b border-[var(--color-divider-tertiary)] bg-[var(--color-report-row-alt)]">
                 <td className="px-3 py-1 font-semibold text-[var(--color-text-primary)]">Gross Profit</td>
                 <td className="px-3 py-1 text-right font-semibold">{formatMoney(profitAndLossData.totalIncome)}</td>
               </tr>
 
-              <tr className="border-b border-[var(--color-container-background-secondary)] bg-[var(--color-report-row-alt)]">
-                <td className="px-3 py-1 font-medium text-[var(--color-text-primary)]">Expenses</td>
-                <td />
-              </tr>
-              {profitAndLossData.expenseRows.map((row) => (
-                <tr key={`expense-${row.name}`} className="border-b border-[var(--color-container-background-secondary)]">
-                  <td className="px-6 py-1 text-[var(--color-text-primary)]">{row.name}</td>
-                  <td className="px-3 py-1 text-right">{formatMoney(row.amount)}</td>
+              <ReportSection
+                label="Expenses"
+                isOpen={openSections.expenses ?? true}
+                onToggle={() => toggleSection("expenses")}
+              >
+                {buildHierarchyRows(profitAndLossData.expenseRows).map((row) => (
+                  <tr key={`expense-${row.fullName}`} className="border-b border-[var(--color-container-background-secondary)]">
+                    <td
+                      className="py-1 pr-3 text-[var(--color-text-primary)]"
+                      style={{ paddingLeft: `${1.5 + row.depth * 1.5}rem` }}
+                    >
+                      {row.label}
+                    </td>
+                    <td className="px-3 py-1 text-right">{formatMoney(row.amount)}</td>
+                  </tr>
+                ))}
+                <tr className="border-b border-[var(--color-divider-tertiary)]">
+                  <td className="px-3 py-1 font-semibold text-[var(--color-text-primary)]">Total for Expenses</td>
+                  <td className="px-3 py-1 text-right font-semibold">{formatMoney(profitAndLossData.totalExpense)}</td>
                 </tr>
-              ))}
-              <tr className="border-b border-[var(--color-divider-tertiary)]">
-                <td className="px-3 py-1 font-semibold text-[var(--color-text-primary)]">Total for Expenses</td>
-                <td className="px-3 py-1 text-right font-semibold">{formatMoney(profitAndLossData.totalExpense)}</td>
-              </tr>
+              </ReportSection>
               <tr className="border-b border-[var(--color-divider-tertiary)] bg-[var(--color-report-row-alt)]">
                 <td className="px-3 py-1 font-semibold text-[var(--color-text-primary)]">Net Operating Income</td>
                 <td className="px-3 py-1 text-right font-semibold">{formatMoney(profitAndLossData.operatingIncome)}</td>
@@ -497,9 +521,14 @@ export function ReportsPage() {
                 <td className="px-6 py-1 font-medium">Bank Accounts</td>
                 <td />
               </tr>
-              {balanceSheetData.bankAccounts.map((row) => (
-                <tr key={`bank-${row.name}`} className="border-b border-[var(--color-container-background-secondary)]">
-                  <td className="px-8 py-1">{row.name}</td>
+              {buildHierarchyRows(balanceSheetData.bankAccounts).map((row) => (
+                <tr key={`bank-${row.fullName}`} className="border-b border-[var(--color-container-background-secondary)]">
+                  <td
+                    className="py-1 pr-3"
+                    style={{ paddingLeft: `${2 + row.depth * 1.5}rem` }}
+                  >
+                    {row.label}
+                  </td>
                   <td className="px-3 py-1 text-right">{formatMoney(row.amount)}</td>
                 </tr>
               ))}
@@ -524,9 +553,14 @@ export function ReportsPage() {
                 <td className="px-4 py-1 font-medium">Liabilities</td>
                 <td />
               </tr>
-              {balanceSheetData.liabilities.map((row) => (
-                <tr key={`liability-${row.name}`} className="border-b border-[var(--color-container-background-secondary)]">
-                  <td className="px-6 py-1">{row.name}</td>
+              {buildHierarchyRows(balanceSheetData.liabilities).map((row) => (
+                <tr key={`liability-${row.fullName}`} className="border-b border-[var(--color-container-background-secondary)]">
+                  <td
+                    className="py-1 pr-3"
+                    style={{ paddingLeft: `${1.5 + row.depth * 1.5}rem` }}
+                  >
+                    {row.label}
+                  </td>
                   <td className="px-3 py-1 text-right">{formatMoney(row.amount)}</td>
                 </tr>
               ))}
@@ -539,9 +573,14 @@ export function ReportsPage() {
                 <td className="px-4 py-1 font-medium">Equity</td>
                 <td />
               </tr>
-              {balanceSheetData.equityRows.map((row) => (
-                <tr key={`equity-${row.name}`} className="border-b border-[var(--color-container-background-secondary)]">
-                  <td className="px-6 py-1">{row.name}</td>
+              {buildHierarchyRows(balanceSheetData.equityRows).map((row) => (
+                <tr key={`equity-${row.fullName}`} className="border-b border-[var(--color-container-background-secondary)]">
+                  <td
+                    className="py-1 pr-3"
+                    style={{ paddingLeft: `${1.5 + row.depth * 1.5}rem` }}
+                  >
+                    {row.label}
+                  </td>
                   <td className="px-3 py-1 text-right">{formatMoney(row.amount)}</td>
                 </tr>
               ))}

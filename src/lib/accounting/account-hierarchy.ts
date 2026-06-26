@@ -1,0 +1,106 @@
+export type AccountRow = { name: string; amount: number };
+
+export type HierarchyRow = {
+  label: string;
+  fullName: string;
+  amount: number;
+  depth: number;
+  hasChildren: boolean;
+};
+
+type TreeNode = {
+  label: string;
+  fullName: string;
+  amount: number;
+  inInput: boolean;
+  children: Map<string, TreeNode>;
+};
+
+function buildTree(rows: AccountRow[]): Map<string, TreeNode> {
+  const root = new Map<string, TreeNode>();
+
+  for (const row of rows) {
+    const parts = row.name.split(":");
+    let current = root;
+    const pathParts: string[] = [];
+
+    for (let i = 0; i < parts.length; i++) {
+      const part = parts[i];
+      pathParts.push(part);
+      const fullPath = pathParts.join(":");
+
+      if (!current.has(part)) {
+        current.set(part, {
+          label: part,
+          fullName: fullPath,
+          amount: 0,
+          inInput: false,
+          children: new Map()
+        });
+      }
+
+      const node = current.get(part)!;
+
+      if (i === parts.length - 1) {
+        node.amount = row.amount;
+        node.fullName = row.name;
+        node.inInput = true;
+      }
+
+      current = node.children;
+    }
+  }
+
+  return root;
+}
+
+function flattenTree(
+  nodes: Map<string, TreeNode>,
+  depth: number,
+  result: HierarchyRow[]
+): void {
+  const sorted = [...nodes.entries()].sort((a, b) =>
+    a[0].localeCompare(b[0])
+  );
+
+  for (const [, node] of sorted) {
+    const hasChildren = node.children.size > 0;
+
+    if (node.inInput) {
+      result.push({
+        label: node.label,
+        fullName: node.fullName,
+        amount: node.amount,
+        depth,
+        hasChildren
+      });
+      if (hasChildren) {
+        flattenTree(node.children, depth + 1, result);
+      }
+    } else {
+      // Phantom intermediate node (not in the input rows — zero balance was
+      // filtered out upstream). Show its children at the same depth so they
+      // don't appear indented under a missing parent.
+      if (hasChildren) {
+        flattenTree(node.children, depth, result);
+      }
+    }
+  }
+}
+
+/**
+ * Takes a flat list of { name, amount } rows where `name` uses `:` as a
+ * hierarchy separator (Beancount convention) and returns a depth-annotated
+ * list suitable for indented rendering.
+ *
+ * - Parent accounts that have their own balance remain as real rows.
+ * - Children are grouped under their parent in DFS order.
+ * - `label` is the leaf segment of the name (e.g. "Bloodwork visit").
+ * - `depth` starts at 0 for top-level accounts.
+ */
+export function buildHierarchyRows(rows: AccountRow[]): HierarchyRow[] {
+  const tree = buildTree(rows);
+  const result: HierarchyRow[] = [];
+  flattenTree(tree, 0, result);
+  return result;
+}
