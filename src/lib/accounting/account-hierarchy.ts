@@ -104,3 +104,31 @@ export function buildHierarchyRows(rows: AccountRow[]): HierarchyRow[] {
   flattenTree(tree, 0, result);
   return result;
 }
+
+/**
+ * Removes rows whose nearest collapsed ancestor would hide them.
+ *
+ * The input list must be in DFS order (as produced by buildHierarchyRows).
+ * A row is hidden when any preceding row with a shallower or equal depth is
+ * in the `collapsedNames` set and is a parent (hasChildren === true).
+ */
+export function filterCollapsed(
+  rows: HierarchyRow[],
+  collapsedNames: Set<string>
+): HierarchyRow[] {
+  const result: HierarchyRow[] = [];
+  let hiddenBelowDepth: number | null = null;
+
+  for (const row of rows) {
+    if (hiddenBelowDepth !== null && row.depth > hiddenBelowDepth) {
+      continue;
+    }
+    hiddenBelowDepth = null;
+    result.push(row);
+    if (row.hasChildren && collapsedNames.has(row.fullName)) {
+      hiddenBelowDepth = row.depth;
+    }
+  }
+
+  return result;
+}
