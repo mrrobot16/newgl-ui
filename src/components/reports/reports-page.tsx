@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Button } from "@/components/ui/button";
+import Link from "next/link";
+import { ArrowLeft } from "lucide-react";
 import { InputField } from "@/components/ui/input-field";
 import { SelectField } from "@/components/bank-register/select-field";
 import {
@@ -13,11 +14,20 @@ import {
   REPORT_PERIOD_OPTIONS,
   REPORT_USER_NAME
 } from "@/constants/ui";
+import { buildHierarchyRows } from "@/lib/accounting/account-hierarchy";
+import { ReportSection } from "@/components/reports/report-section";
+import { ReportAccountRows } from "@/components/reports/report-account-rows";
+import { getTransactionsForAccount } from "@/lib/accounting/drill-down";
+import type { DrillTransaction } from "@/lib/accounting/drill-down";
 import { getServiceContainer } from "@/lib/services/service-container-v2";
 import { DEBIT_NORMAL_CATEGORIES } from "@/modules/accounting/domain/accounting-reports";
 import type { Account, LedgerPosting } from "@/modules/accounting/domain/models";
 
-type ReportType = "profit_loss" | "balance_sheet" | "cash_flow" | "trial_balance";
+type ReportType = "profit_loss" | "balance_sheet";
+
+type ReportsPageProps = {
+  reportType: ReportType;
+};
 type AccountingMethod = "cash" | "accrual";
 type ReportPeriodPreset =
   | "all_dates"
@@ -33,6 +43,13 @@ type ReportPeriodPreset =
   | "last_year"
   | "this_year_to_date"
   | "custom";
+
+type DrillSection = {
+  label: string;
+  reportLabel: string;
+  rows: Array<{ name: string; amount: number }>;
+  total: number;
+};
 
 function isoDate(date: Date): string {
   const year = date.getFullYear();
@@ -121,6 +138,11 @@ function formatMoney(value: number): string {
   });
 }
 
+function formatDate(iso: string): string {
+  const [y, m, d] = iso.split("-");
+  return `${m}/${d}/${y}`;
+}
+
 function formatAsRange(from: string, to: string): string {
   if (!from && !to) return "All dates";
   if (from && to) {
@@ -151,9 +173,8 @@ function signedImpact(account: Account, posting: LedgerPosting): number {
   return posting.entryType === "CREDIT" ? posting.amount : -posting.amount;
 }
 
-export function ReportsPage() {
+export function ReportsPage({ reportType }: ReportsPageProps) {
   const services = useMemo(() => getServiceContainer(), []);
-  const [reportType, setReportType] = useState<ReportType>("profit_loss");
   const [reportPeriod, setReportPeriod] = useState<ReportPeriodPreset>(REPORT_DEFAULT_PERIOD);
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
@@ -162,6 +183,28 @@ export function ReportsPage() {
   const [compareTo, setCompareTo] = useState<string>(REPORT_DEFAULT_COMPARE_TO);
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [postings, setPostings] = useState<LedgerPosting[]>([]);
+  const [openSections, setOpenSections] = useState<Record<string, boolean>>({
+    income: true,
+    expenses: true,
+    bs_assets: true,
+    bs_liabilities_equity: true,
+    bs_liabilities: true,
+    bs_equity: true,
+  });
+  const [collapsedAccounts, setCollapsedAccounts] = useState<Set<string>>(new Set());
+  const [drillSection, setDrillSection] = useState<DrillSection | null>(null);
+
+  function toggleSection(key: string) {
+    setOpenSections((prev) => ({ ...prev, [key]: !prev[key] }));
+  }
+
+  function toggleAccountCollapse(fullName: string) {
+    setCollapsedAccounts((prev) => {
+      const next = new Set(prev);
+      next.has(fullName) ? next.delete(fullName) : next.add(fullName);
+      return next;
+    });
+  }
 
   useEffect(() => {
     const range = dateRangeForPreset(REPORT_DEFAULT_PERIOD);
@@ -177,9 +220,7 @@ export function ReportsPage() {
   function handlePeriodChange(value: string) {
     const preset = value as ReportPeriodPreset;
     setReportPeriod(preset);
-    if (preset === "custom") {
-      return;
-    }
+    if (preset === "custom") return;
     const range = dateRangeForPreset(preset);
     setFromDate(range.from);
     setToDate(range.to);
@@ -199,7 +240,7 @@ export function ReportsPage() {
 
   const accountById = useMemo(() => {
     const map = new Map<string, Account>();
-    accounts.forEach((account) => map.set(account.id, account));
+    accounts.forEach((a) => map.set(a.id, a));
     return map;
   }, [accounts]);
 
@@ -208,27 +249,19 @@ export function ReportsPage() {
     const expenseCategories = new Set(["EXPENSE", "OTHER_EXPENSE"]);
     let incomeTotal = 0;
     let expenseTotal = 0;
-
     postingsInRange.forEach((posting) => {
       const account = accountById.get(posting.accountId);
       if (!account) return;
       const impact = signedImpact(account, posting);
-
-      if (incomeCategories.has(account.category)) {
-        incomeTotal += impact;
-      }
-      if (expenseCategories.has(account.category)) {
-        expenseTotal += impact;
-      }
+      if (incomeCategories.has(account.category)) incomeTotal += impact;
+      if (expenseCategories.has(account.category)) expenseTotal += impact;
     });
-
     return incomeTotal - expenseTotal;
   }, [accountById, postingsInRange]);
 
   const profitAndLossData = useMemo(() => {
     const incomeCategories = new Set(["INCOME", "OTHER_INCOME"]);
     const expenseCategories = new Set(["EXPENSE", "OTHER_EXPENSE"]);
-
     const incomeMap = new Map<string, number>();
     const expenseMap = new Map<string, number>();
 
@@ -236,50 +269,37 @@ export function ReportsPage() {
       const account = accountById.get(posting.accountId);
       if (!account) return;
       const impact = signedImpact(account, posting);
-
-      if (incomeCategories.has(account.category)) {
+      if (incomeCategories.has(account.category))
         incomeMap.set(account.name, (incomeMap.get(account.name) ?? 0) + impact);
-      }
-      if (expenseCategories.has(account.category)) {
+      if (expenseCategories.has(account.category))
         expenseMap.set(account.name, (expenseMap.get(account.name) ?? 0) + impact);
-      }
     });
 
     const incomeRows = [...incomeMap.entries()]
       .map(([name, amount]) => ({ name, amount }))
-      .filter((row) => Math.abs(row.amount) > 0.0001)
+      .filter((r) => Math.abs(r.amount) > 0.0001)
       .sort((a, b) => a.name.localeCompare(b.name));
 
     const expenseRows = [...expenseMap.entries()]
       .map(([name, amount]) => ({ name, amount }))
-      .filter((row) => Math.abs(row.amount) > 0.0001)
+      .filter((r) => Math.abs(r.amount) > 0.0001)
       .sort((a, b) => a.name.localeCompare(b.name));
 
-    const totalIncome = incomeRows.reduce((sum, row) => sum + row.amount, 0);
-    const totalExpense = expenseRows.reduce((sum, row) => sum + row.amount, 0);
+    const totalIncome = incomeRows.reduce((s, r) => s + r.amount, 0);
+    const totalExpense = expenseRows.reduce((s, r) => s + r.amount, 0);
     const operatingIncome = totalIncome - totalExpense;
 
-    return {
-      incomeRows,
-      expenseRows,
-      totalIncome,
-      totalExpense,
-      operatingIncome,
-      netIncome: operatingIncome
-    };
+    return { incomeRows, expenseRows, totalIncome, totalExpense, operatingIncome, netIncome: operatingIncome };
   }, [accountById, postingsInRange]);
 
   const balanceSheetData = useMemo(() => {
     const asOfDate = toDate || isoDate(new Date());
     const asOfPostings = postings.filter(
-      (posting) => posting.status === "POSTED" && posting.postingDate <= asOfDate
+      (p) => p.status === "POSTED" && p.postingDate <= asOfDate
     );
 
     const balances = new Map<string, number>();
-    accounts.forEach((account) => {
-      balances.set(account.id, account.openingBalance ?? 0);
-    });
-
+    accounts.forEach((a) => balances.set(a.id, a.openingBalance ?? 0));
     asOfPostings.forEach((posting) => {
       const account = accountById.get(posting.accountId);
       if (!account) return;
@@ -288,24 +308,21 @@ export function ReportsPage() {
 
     const byCategory = (categories: Set<Account["category"]>) =>
       accounts
-        .filter((account) => categories.has(account.category))
-        .map((account) => ({ name: account.name, amount: balances.get(account.id) ?? 0 }))
-        .filter((row) => Math.abs(row.amount) > 0.0001)
+        .filter((a) => categories.has(a.category))
+        .map((a) => ({ name: a.name, amount: balances.get(a.id) ?? 0 }))
+        .filter((r) => Math.abs(r.amount) > 0.0001)
         .sort((a, b) => a.name.localeCompare(b.name));
 
     const bankAccounts = byCategory(new Set(["BANK"]));
     const currentAssets = byCategory(new Set(["BANK", "ACCOUNTS_RECEIVABLE", "OTHER_CURRENT_ASSET"]));
-    const fixedAssets = byCategory(new Set(["FIXED_ASSET"]));
     const liabilities = byCategory(new Set(["CREDIT_CARD", "LONG_TERM_LIABILITY", "OTHER_CURRENT_LIABILITY"]));
     const equityRows = byCategory(new Set(["EQUITY"]));
 
-    const totalBankAccounts = bankAccounts.reduce((sum, row) => sum + row.amount, 0);
-    const totalCurrentAssets = currentAssets.reduce((sum, row) => sum + row.amount, 0);
-    const totalFixedAssets = fixedAssets.reduce((sum, row) => sum + row.amount, 0);
-    const totalAssets = totalCurrentAssets + totalFixedAssets;
-
-    const totalLiabilities = liabilities.reduce((sum, row) => sum + row.amount, 0);
-    const totalEquityWithoutNetIncome = equityRows.reduce((sum, row) => sum + row.amount, 0);
+    const totalBankAccounts = bankAccounts.reduce((s, r) => s + r.amount, 0);
+    const totalCurrentAssets = currentAssets.reduce((s, r) => s + r.amount, 0);
+    const totalAssets = totalCurrentAssets;
+    const totalLiabilities = liabilities.reduce((s, r) => s + r.amount, 0);
+    const totalEquityWithoutNetIncome = equityRows.reduce((s, r) => s + r.amount, 0);
     const totalEquity = totalEquityWithoutNetIncome + netIncome;
     const totalLiabilitiesAndEquity = totalLiabilities + totalEquity;
 
@@ -319,15 +336,34 @@ export function ReportsPage() {
       equityRows,
       totalEquity,
       totalLiabilitiesAndEquity,
-      netIncome
+      netIncome,
     };
   }, [accounts, accountById, postings, toDate, netIncome]);
 
+  const reportLabel = reportType === "profit_loss" ? "Profit and Loss" : "Balance Sheet";
+
+  // Pre-compute transactions for every account in the drill section (no extra API calls)
+  const drillSectionTransactions = useMemo<Map<string, DrillTransaction[]>>(() => {
+    if (!drillSection) return new Map();
+    const map = new Map<string, DrillTransaction[]>();
+    for (const row of drillSection.rows) {
+      map.set(row.name, getTransactionsForAccount(row.name, postings, accounts, fromDate, toDate));
+    }
+    return map;
+  }, [drillSection, postings, accounts, fromDate, toDate]);
+
   return (
     <main className="tw-override main bg-[var(--color-container-background-primary)] text-sm text-[var(--color-text-primary)]">
-      <header className="header header-reports mb-4 ">
+      <header className="header header-reports mb-4">
         <div className="w-full">
-          <h1 className="page-title">Reports</h1>
+          <nav className="mb-2 flex items-center gap-1.5 text-xs text-[var(--color-icon-secondary)]">
+            <Link href="/reports" className="hover:underline text-[var(--color-link-text)]">
+              Standard Reports
+            </Link>
+            <span>›</span>
+            <span className="text-[var(--color-text-primary)]">{reportLabel}</span>
+          </nav>
+          <h1 className="page-title">{reportLabel}</h1>
         </div>
         <div className="header-filters">
           <div>
@@ -343,11 +379,11 @@ export function ReportsPage() {
           </div>
           <div>
             <p className="mb-1 text-[11px] text-[var(--color-icon-secondary)]">From</p>
-            <InputField type="date" value={fromDate} onChange={(event) => handleFromChange(event.target.value)} />
+            <InputField type="date" value={fromDate} onChange={(e) => handleFromChange(e.target.value)} />
           </div>
           <div>
             <p className="mb-1 text-[11px] text-[var(--color-icon-secondary)]">To</p>
-            <InputField type="date" value={toDate} onChange={(event) => handleToChange(event.target.value)} />
+            <InputField type="date" value={toDate} onChange={(e) => handleToChange(e.target.value)} />
           </div>
           <div>
             <p className="mb-1 text-[11px] text-[var(--color-icon-secondary)]">Accounting method</p>
@@ -395,36 +431,103 @@ export function ReportsPage() {
 
       <section className="page-content">
       <section className="mx-auto mt-8 w-full max-w-[840px] rounded border border-[var(--color-divider-tertiary)] bg-[var(--color-container-background-primary)] p-5 shadow-sm">
-        <div className="mb-4 flex flex-wrap items-center justify-between gap-2 border-b border-[var(--color-divider-tertiary)] pb-3">
-          <div className="flex items-center gap-2">
-            <Button
-              variant={reportType === "profit_loss" ? "primary" : "secondary"}
-              onClick={() => setReportType("profit_loss")}
-            >
-              Profit and Loss
-            </Button>
-            <Button
-              variant={reportType === "balance_sheet" ? "primary" : "secondary"}
-              onClick={() => setReportType("balance_sheet")}
-            >
-              Balance Sheet
-            </Button>
-          </div>
-          <span className="text-xs text-[var(--color-icon-secondary)]">{accountingMethod === "cash" ? "Cash basis" : "Accrual basis"}</span>
+
+        {/* ── Report toolbar ── */}
+        <div className="mb-4 flex flex-wrap items-center justify-end gap-2 border-b border-[var(--color-divider-tertiary)] pb-3">
+          <span className="text-xs text-[var(--color-icon-secondary)]">
+            {accountingMethod === "cash" ? "Cash basis" : "Accrual basis"}
+          </span>
         </div>
 
+        {/* ── Report title block ── */}
         <div className="mb-4 text-center">
-          <h2 className="text-[28px] font-medium text-[var(--color-text-global)]">{REPORT_USER_NAME}</h2>
-          <p className="text-[16px] text-[var(--color-text-primary)]">{reportType === "profit_loss" ? "Profit and Loss" : "Balance Sheet"}</p>
+          <h2 className="text-[28px] font-medium text-[var(--color-text-global)] mb-2">{REPORT_USER_NAME}</h2>
+          <p className="text-[16px] text-[var(--color-text-primary)] mb-2">{reportLabel}</p>
           <p className="text-xs text-[var(--color-icon-secondary)]">
-            {reportType === "profit_loss" ? formatAsRange(fromDate, toDate) : `As of ${formatAsRange("", toDate)}`}
-          </p>
-          <p className="mt-1 text-[11px] text-[var(--color-icon-secondary)]">
-            {reportType === "profit_loss" ? "Profit and Loss report is ready" : "Balance Sheet report is ready"}
+            {reportType === "profit_loss"
+              ? formatAsRange(fromDate, toDate)
+              : `As of ${formatAsRange("", toDate)}`}
           </p>
         </div>
 
-        {reportType === "profit_loss" ? (
+        {/* ── Detail view (replaces the summary table when a section is drilled into) ── */}
+        {drillSection !== null ? (
+          <>
+            {/* Back navigation */}
+            <div className="mb-5 flex items-center gap-2 border-b border-[var(--color-divider-tertiary)] pb-3">
+              <button
+                type="button"
+                onClick={() => setDrillSection(null)}
+                className="flex items-center gap-1.5 text-sm text-[var(--color-link-text)] hover:underline"
+              >
+                <ArrowLeft className="h-4 w-4" />
+                Back to Summary
+              </button>
+              <span className="text-[var(--color-icon-secondary)]">›</span>
+              <span className="text-sm text-[var(--color-icon-secondary)]">{drillSection.reportLabel}</span>
+              <span className="text-[var(--color-icon-secondary)]">›</span>
+              <span className="text-sm font-medium text-[var(--color-text-primary)]">{drillSection.label}</span>
+            </div>
+
+            {/* One block per account in the section */}
+            {drillSection.rows.map((row) => {
+              const txns = drillSectionTransactions.get(row.name) ?? [];
+              const displayName = row.name.replace(/:/g, " › ");
+              return (
+                <div key={row.name} className="mb-7">
+                  {/* Account header */}
+                  <div className="flex items-baseline justify-between border-b-2 border-[var(--color-divider-tertiary)] pb-1 mb-1">
+                    <span className="font-semibold text-[var(--color-text-primary)]">{displayName}</span>
+                    <span className="font-semibold text-[var(--color-text-primary)]">{formatMoney(Math.abs(row.amount))}</span>
+                  </div>
+
+                  {txns.length === 0 ? (
+                    <p className="py-2 text-xs text-[var(--color-text-disabled)]">No transactions in this period.</p>
+                  ) : (
+                    <table className="w-full border-collapse text-sm">
+                      <thead>
+                        <tr className="border-b border-[var(--color-divider-tertiary)] bg-[var(--color-container-background-accent)]">
+                          <th className="px-3 py-1 text-left font-medium text-[var(--color-text-primary)]">Date</th>
+                          <th className="px-3 py-1 text-left font-medium text-[var(--color-text-primary)]">Description</th>
+                          <th className="px-3 py-1 text-left font-medium text-[var(--color-text-primary)]">Ref #</th>
+                          <th className="px-3 py-1 text-right font-medium text-[var(--color-text-primary)]">Amount</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {txns.map((txn) => (
+                          <tr key={txn.transactionId} className="border-b border-[var(--color-container-background-secondary)]">
+                            <td className="px-3 py-1 text-[var(--color-text-primary)]">{formatDate(txn.date)}</td>
+                            <td className="px-3 py-1 text-[var(--color-text-primary)]">{txn.memo || "—"}</td>
+                            <td className="px-3 py-1 text-[var(--color-text-disabled)]">{txn.referenceNumber || "—"}</td>
+                            <td className="px-3 py-1 text-right text-[var(--color-text-primary)]">{formatMoney(Math.abs(txn.amount))}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                      <tfoot>
+                        <tr className="border-t border-[var(--color-divider-tertiary)]">
+                          <td colSpan={3} className="px-3 py-1 font-semibold text-[var(--color-text-primary)]">
+                            Total
+                          </td>
+                          <td className="px-3 py-1 text-right font-semibold text-[var(--color-text-primary)]">
+                            {formatMoney(Math.abs(row.amount))}
+                          </td>
+                        </tr>
+                      </tfoot>
+                    </table>
+                  )}
+                </div>
+              );
+            })}
+
+            {/* Section grand total */}
+            <div className="mt-2 flex items-baseline justify-between border-t-2 border-[var(--color-divider-tertiary)] pt-2">
+              <span className="font-bold text-[var(--color-text-primary)]">Total {drillSection.label}</span>
+              <span className="font-bold text-[var(--color-text-primary)]">{formatMoney(Math.abs(drillSection.total))}</span>
+            </div>
+          </>
+
+        ) : reportType === "profit_loss" ? (
+          /* ── Profit & Loss summary table ── */
           <table className="w-full border-collapse text-sm">
             <thead>
               <tr className="border-y border-[var(--color-divider-tertiary)] bg-[var(--color-container-background-accent)]">
@@ -433,39 +536,57 @@ export function ReportsPage() {
               </tr>
             </thead>
             <tbody>
-              <tr className="border-b border-[var(--color-container-background-secondary)] bg-[var(--color-report-row-alt)]">
-                <td className="px-3 py-1 font-medium text-[var(--color-text-primary)]">Income</td>
-                <td />
-              </tr>
-              {profitAndLossData.incomeRows.map((row) => (
-                <tr key={`income-${row.name}`} className="border-b border-[var(--color-container-background-secondary)]">
-                  <td className="px-6 py-1 text-[var(--color-text-primary)]">{row.name}</td>
-                  <td className="px-3 py-1 text-right">{formatMoney(row.amount)}</td>
+              <ReportSection
+                label="Income"
+                isOpen={openSections.income ?? true}
+                onToggle={() => toggleSection("income")}
+              >
+                <ReportAccountRows
+                  rows={buildHierarchyRows(profitAndLossData.incomeRows)}
+                  collapsedNames={collapsedAccounts}
+                  rowKeyPrefix="income"
+                  onToggleCollapse={toggleAccountCollapse}
+                  onDrillAmount={() => setDrillSection({
+                    label: "Income",
+                    reportLabel,
+                    rows: profitAndLossData.incomeRows,
+                    total: profitAndLossData.totalIncome,
+                  })}
+                />
+                <tr className="border-b border-[var(--color-divider-tertiary)]">
+                  <td className="px-3 py-1 font-semibold text-[var(--color-text-primary)]">Total for Income</td>
+                  <td className="px-3 py-1 text-right font-semibold">{formatMoney(profitAndLossData.totalIncome)}</td>
                 </tr>
-              ))}
-              <tr className="border-b border-[var(--color-divider-tertiary)]">
-                <td className="px-3 py-1 font-semibold text-[var(--color-text-primary)]">Total for Income</td>
-                <td className="px-3 py-1 text-right font-semibold">{formatMoney(profitAndLossData.totalIncome)}</td>
-              </tr>
+              </ReportSection>
+
               <tr className="border-b border-[var(--color-divider-tertiary)] bg-[var(--color-report-row-alt)]">
                 <td className="px-3 py-1 font-semibold text-[var(--color-text-primary)]">Gross Profit</td>
                 <td className="px-3 py-1 text-right font-semibold">{formatMoney(profitAndLossData.totalIncome)}</td>
               </tr>
 
-              <tr className="border-b border-[var(--color-container-background-secondary)] bg-[var(--color-report-row-alt)]">
-                <td className="px-3 py-1 font-medium text-[var(--color-text-primary)]">Expenses</td>
-                <td />
-              </tr>
-              {profitAndLossData.expenseRows.map((row) => (
-                <tr key={`expense-${row.name}`} className="border-b border-[var(--color-container-background-secondary)]">
-                  <td className="px-6 py-1 text-[var(--color-text-primary)]">{row.name}</td>
-                  <td className="px-3 py-1 text-right">{formatMoney(row.amount)}</td>
+              <ReportSection
+                label="Expenses"
+                isOpen={openSections.expenses ?? true}
+                onToggle={() => toggleSection("expenses")}
+              >
+                <ReportAccountRows
+                  rows={buildHierarchyRows(profitAndLossData.expenseRows)}
+                  collapsedNames={collapsedAccounts}
+                  rowKeyPrefix="expense"
+                  onToggleCollapse={toggleAccountCollapse}
+                  onDrillAmount={() => setDrillSection({
+                    label: "Expenses",
+                    reportLabel,
+                    rows: profitAndLossData.expenseRows,
+                    total: profitAndLossData.totalExpense,
+                  })}
+                />
+                <tr className="border-b border-[var(--color-divider-tertiary)]">
+                  <td className="px-3 py-1 font-semibold text-[var(--color-text-primary)]">Total for Expenses</td>
+                  <td className="px-3 py-1 text-right font-semibold">{formatMoney(profitAndLossData.totalExpense)}</td>
                 </tr>
-              ))}
-              <tr className="border-b border-[var(--color-divider-tertiary)]">
-                <td className="px-3 py-1 font-semibold text-[var(--color-text-primary)]">Total for Expenses</td>
-                <td className="px-3 py-1 text-right font-semibold">{formatMoney(profitAndLossData.totalExpense)}</td>
-              </tr>
+              </ReportSection>
+
               <tr className="border-b border-[var(--color-divider-tertiary)] bg-[var(--color-report-row-alt)]">
                 <td className="px-3 py-1 font-semibold text-[var(--color-text-primary)]">Net Operating Income</td>
                 <td className="px-3 py-1 text-right font-semibold">{formatMoney(profitAndLossData.operatingIncome)}</td>
@@ -476,7 +597,9 @@ export function ReportsPage() {
               </tr>
             </tbody>
           </table>
+
         ) : (
+          /* ── Balance Sheet summary table ── */
           <table className="w-full border-collapse text-sm">
             <thead>
               <tr className="border-y border-[var(--color-divider-tertiary)] bg-[var(--color-container-background-accent)]">
@@ -485,81 +608,114 @@ export function ReportsPage() {
               </tr>
             </thead>
             <tbody>
-              <tr className="border-b border-[var(--color-container-background-secondary)] bg-[var(--color-report-row-alt)]">
-                <td className="px-3 py-1 font-medium">Assets</td>
-                <td />
-              </tr>
-              <tr className="border-b border-[var(--color-container-background-secondary)]">
-                <td className="px-4 py-1 font-medium">Current Assets</td>
-                <td />
-              </tr>
-              <tr className="border-b border-[var(--color-container-background-secondary)]">
-                <td className="px-6 py-1 font-medium">Bank Accounts</td>
-                <td />
-              </tr>
-              {balanceSheetData.bankAccounts.map((row) => (
-                <tr key={`bank-${row.name}`} className="border-b border-[var(--color-container-background-secondary)]">
-                  <td className="px-8 py-1">{row.name}</td>
-                  <td className="px-3 py-1 text-right">{formatMoney(row.amount)}</td>
+              {/* Assets — collapsible */}
+              <ReportSection
+                label="Assets"
+                isOpen={openSections.bs_assets ?? true}
+                onToggle={() => toggleSection("bs_assets")}
+              >
+                <tr className="border-b border-[var(--color-container-background-secondary)]">
+                  <td className="px-4 py-1 font-medium text-[var(--color-text-primary)]">Current Assets</td>
+                  <td />
                 </tr>
-              ))}
-              <tr className="border-b border-[var(--color-container-background-secondary)]">
-                <td className="px-6 py-1 font-semibold">Total for Bank Accounts</td>
-                <td className="px-3 py-1 text-right font-semibold">{formatMoney(balanceSheetData.totalBankAccounts)}</td>
-              </tr>
-              <tr className="border-b border-[var(--color-container-background-secondary)]">
-                <td className="px-4 py-1 font-semibold">Total for Current Assets</td>
-                <td className="px-3 py-1 text-right font-semibold">{formatMoney(balanceSheetData.totalCurrentAssets)}</td>
-              </tr>
-              <tr className="border-b border-[var(--color-divider-tertiary)] bg-[var(--color-report-row-alt)]">
-                <td className="px-3 py-1 font-semibold">Total for Assets</td>
-                <td className="px-3 py-1 text-right font-semibold">{formatMoney(balanceSheetData.totalAssets)}</td>
-              </tr>
+                <tr className="border-b border-[var(--color-container-background-secondary)]">
+                  <td className="px-6 py-1 font-medium text-[var(--color-text-primary)]">Bank Accounts</td>
+                  <td />
+                </tr>
+                <ReportAccountRows
+                  rows={buildHierarchyRows(balanceSheetData.bankAccounts)}
+                  collapsedNames={collapsedAccounts}
+                  rowKeyPrefix="bank"
+                  baseIndentRem={2}
+                  onToggleCollapse={toggleAccountCollapse}
+                  onDrillAmount={() => setDrillSection({
+                    label: "Bank Accounts",
+                    reportLabel,
+                    rows: balanceSheetData.bankAccounts,
+                    total: balanceSheetData.totalBankAccounts,
+                  })}
+                />
+                <tr className="border-b border-[var(--color-container-background-secondary)]">
+                  <td className="px-6 py-1 font-semibold text-[var(--color-text-primary)]">Total for Bank Accounts</td>
+                  <td className="px-3 py-1 text-right font-semibold">{formatMoney(balanceSheetData.totalBankAccounts)}</td>
+                </tr>
+                <tr className="border-b border-[var(--color-container-background-secondary)]">
+                  <td className="px-4 py-1 font-semibold text-[var(--color-text-primary)]">Total for Current Assets</td>
+                  <td className="px-3 py-1 text-right font-semibold">{formatMoney(balanceSheetData.totalCurrentAssets)}</td>
+                </tr>
+                <tr className="border-b border-[var(--color-divider-tertiary)]">
+                  <td className="px-3 py-1 font-semibold text-[var(--color-text-primary)]">Total for Assets</td>
+                  <td className="px-3 py-1 text-right font-semibold">{formatMoney(balanceSheetData.totalAssets)}</td>
+                </tr>
+              </ReportSection>
 
-              <tr className="border-b border-[var(--color-container-background-secondary)] bg-[var(--color-report-row-alt)]">
-                <td className="px-3 py-1 font-medium">Liabilities and Equity</td>
-                <td />
-              </tr>
-              <tr className="border-b border-[var(--color-container-background-secondary)]">
-                <td className="px-4 py-1 font-medium">Liabilities</td>
-                <td />
-              </tr>
-              {balanceSheetData.liabilities.map((row) => (
-                <tr key={`liability-${row.name}`} className="border-b border-[var(--color-container-background-secondary)]">
-                  <td className="px-6 py-1">{row.name}</td>
-                  <td className="px-3 py-1 text-right">{formatMoney(row.amount)}</td>
-                </tr>
-              ))}
-              <tr className="border-b border-[var(--color-container-background-secondary)]">
-                <td className="px-4 py-1 font-semibold">Total for Liabilities</td>
-                <td className="px-3 py-1 text-right font-semibold">{formatMoney(balanceSheetData.totalLiabilities)}</td>
-              </tr>
+              {/* Liabilities and Equity — collapsible, with two nested collapsible sub-sections */}
+              <ReportSection
+                label="Liabilities and Equity"
+                isOpen={openSections.bs_liabilities_equity ?? true}
+                onToggle={() => toggleSection("bs_liabilities_equity")}
+              >
+                <ReportSection
+                  label="Liabilities"
+                  isOpen={openSections.bs_liabilities ?? true}
+                  onToggle={() => toggleSection("bs_liabilities")}
+                  headerClassName="bg-[var(--color-container-background-secondary)]"
+                >
+                  <ReportAccountRows
+                    rows={buildHierarchyRows(balanceSheetData.liabilities)}
+                    collapsedNames={collapsedAccounts}
+                    rowKeyPrefix="liability"
+                    onToggleCollapse={toggleAccountCollapse}
+                    onDrillAmount={() => setDrillSection({
+                      label: "Liabilities",
+                      reportLabel,
+                      rows: balanceSheetData.liabilities,
+                      total: balanceSheetData.totalLiabilities,
+                    })}
+                  />
+                  <tr className="border-b border-[var(--color-container-background-secondary)]">
+                    <td className="px-4 py-1 font-semibold text-[var(--color-text-primary)]">Total for Liabilities</td>
+                    <td className="px-3 py-1 text-right font-semibold">{formatMoney(balanceSheetData.totalLiabilities)}</td>
+                  </tr>
+                </ReportSection>
 
-              <tr className="border-b border-[var(--color-container-background-secondary)]">
-                <td className="px-4 py-1 font-medium">Equity</td>
-                <td />
-              </tr>
-              {balanceSheetData.equityRows.map((row) => (
-                <tr key={`equity-${row.name}`} className="border-b border-[var(--color-container-background-secondary)]">
-                  <td className="px-6 py-1">{row.name}</td>
-                  <td className="px-3 py-1 text-right">{formatMoney(row.amount)}</td>
+                <ReportSection
+                  label="Equity"
+                  isOpen={openSections.bs_equity ?? true}
+                  onToggle={() => toggleSection("bs_equity")}
+                  headerClassName="bg-[var(--color-container-background-secondary)]"
+                >
+                  <ReportAccountRows
+                    rows={buildHierarchyRows(balanceSheetData.equityRows)}
+                    collapsedNames={collapsedAccounts}
+                    rowKeyPrefix="equity"
+                    onToggleCollapse={toggleAccountCollapse}
+                    onDrillAmount={() => setDrillSection({
+                      label: "Equity",
+                      reportLabel,
+                      rows: balanceSheetData.equityRows,
+                      total: balanceSheetData.totalEquity,
+                    })}
+                  />
+                  <tr className="border-b border-[var(--color-container-background-secondary)]">
+                    <td className="px-6 py-1 text-[var(--color-text-primary)]">Net Income</td>
+                    <td className="px-3 py-1 text-right">{formatMoney(balanceSheetData.netIncome)}</td>
+                  </tr>
+                  <tr className="border-b border-[var(--color-container-background-secondary)]">
+                    <td className="px-4 py-1 font-semibold text-[var(--color-text-primary)]">Total for Equity</td>
+                    <td className="px-3 py-1 text-right font-semibold">{formatMoney(balanceSheetData.totalEquity)}</td>
+                  </tr>
+                </ReportSection>
+
+                <tr className="border-b border-[var(--color-divider-tertiary)]">
+                  <td className="px-3 py-1 font-semibold text-[var(--color-text-primary)]">Total for Liabilities and Equity</td>
+                  <td className="px-3 py-1 text-right font-semibold">{formatMoney(balanceSheetData.totalLiabilitiesAndEquity)}</td>
                 </tr>
-              ))}
-              <tr className="border-b border-[var(--color-container-background-secondary)]">
-                <td className="px-6 py-1">Net Income</td>
-                <td className="px-3 py-1 text-right">{formatMoney(balanceSheetData.netIncome)}</td>
-              </tr>
-              <tr className="border-b border-[var(--color-container-background-secondary)]">
-                <td className="px-4 py-1 font-semibold">Total for Equity</td>
-                <td className="px-3 py-1 text-right font-semibold">{formatMoney(balanceSheetData.totalEquity)}</td>
-              </tr>
-              <tr className="border-b border-[var(--color-divider-tertiary)] bg-[var(--color-report-row-alt)]">
-                <td className="px-3 py-1 font-semibold">Total for Liabilities and Equity</td>
-                <td className="px-3 py-1 text-right font-semibold">{formatMoney(balanceSheetData.totalLiabilitiesAndEquity)}</td>
-              </tr>
+              </ReportSection>
             </tbody>
           </table>
         )}
+
       </section>
       </section>
     </main>

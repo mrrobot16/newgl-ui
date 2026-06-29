@@ -232,7 +232,7 @@
   background-color: var(--color-container-background-secondary);
 }
 .tw-override .header.header-reports {
-  padding: 0 28px 0;
+  padding: 12px 28px;
   flex-direction: column;
   display: flex;
   align-items: flex-start;
